@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <link href="styles/style.css" rel="stylesheet" />
+    <!-- <link href="styles/style.css" rel="stylesheet" /> -->
+    <link
+      href="styles/style.css"
+      rel="stylesheet" />
     <title>Play Four-in-a-Row! </title>
   </head>
   <body>
@@ -21,14 +24,15 @@
     </p>
     <h2>Rules of Four-in-a-Row:</h2>
     <ol>
-      <li>Two players take turns placing their colored discs on the vertical standing board.</li>
-      <li>The board consists of seven columns and six rows.</li>
-      <li>Players drop one disc at a time into any of the seven columns.</li>
-      <li>The objective is to connect four of your colored discs in a row, either horizontally, vertically, or diagonally.</li>
+      <li id="rule0">Two players take turns placing their colored discs on the vertical standing board.</li>
+      <li id="rule1">The board consists of seven columns and six rows.</li>
+      <li class="rule">Players drop one disc at a time into any of the seven columns.</li>
+      <li class="rule">The objective is to connect four of your colored discs in a row, either horizontally, vertically, or diagonally.</li>
       <li>A player wins the game as soon as they achieve a four-in-a-row formation.</li>
       <li>If the board is filled without a winner, the game ends in a draw.</li>
       <li>Players need to strategize to create winning alignments while blocking their opponent's moves.</li>
       <li>Turns alternate until a player wins, or the game reaches a draw.</li>
-</ol>
+    </ol>
+    <script src="scripts/main.js"></script>
   </body>
 </html>
