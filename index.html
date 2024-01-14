@@ -9,7 +9,7 @@
       rel="stylesheet" />
     <title>Play Four-in-a-Row! </title>
   </head>
-  <body>
+  <body onload="createBoard(6, 7)">
     <h1> Let's play a fun game of Four-in-a-Row!!</h1>
     <img src="images/four-in-a-row.jpg" alt="Four in a Row is Fun!!" />
     <p> Four-in-a-Row is a classic strategy game that challenges players to connect a sequence of
@@ -40,8 +40,9 @@
     <!-- Balloons Container -->
     <div id="balloons-container"></div>
     <button>Change user</button>
-    <div id="grid-container"></div>
+    <!-- <div id="grid-container"></div> -->
+    <div id="gameBoard"></div>
     <button id="new-game-button">New Game</button>
-    <script src="scripts/main.js"></script>
+    <script src="scripts/scratch-code.js"></script>
   </body>
 </html>

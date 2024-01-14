@@ -1,3 +1,31 @@
+function testClick(col) {
+    console.log("Clicked column: " + col);
+}
+
+// Modify the createBoard function
+function createBoard(rows, cols) {
+    const board = document.getElementById('gameBoard');
+    board.innerHTML = '';
+
+    for (let row = 0; row < rows; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'board-row';
+
+        for (let col = 0; col < cols; col++) {
+            const cellDiv = document.createElement('div');
+            cellDiv.className = 'board-cell';
+            cellDiv.dataset.column = col; // Assign column number to each cell
+            cellDiv.onclick = function() {
+                // testClick(col);
+                handlePlayerMove(parseInt(this.dataset.column));
+            };
+            rowDiv.appendChild(cellDiv);
+        }
+
+        board.appendChild(rowDiv);
+    }
+}
+
 function initializeBoard(rows=6, cols=7) {
     for (let i = 0; i < rows; i++) {
         let row = new Array(cols).fill(0); // Filling the row with 0s (empty spaces)
@@ -23,14 +51,12 @@ function resetBoard() {
 }
 
 
-// Board is now a 6x7 2D array with the bottom row as board[0]
-
 // Function to determine legal moves
 function getLegalMoves(board) {
     let legalMoves = [];
     for (let col = 0; col < board[0].length; col++) {
         // Check from the bottom row upwards for the first empty space
-        for (let row = 0; row < board.length; row++) {
+        for (let row = board.length - 1; row >= 0; row--) {
             if (board[row][col] === 0) {
                 legalMoves.push(col);
                 break; // Stop searching this column once an
@@ -40,25 +66,38 @@ function getLegalMoves(board) {
     return legalMoves;
 }
 
+// createBoard();
 console.log('Initial Board: ');
 console.log(board);
 console.log('legal moves:');
 console.log(getLegalMoves(board));
 
 function makeMove(board, column, player) {
-    // Check if the move is legal
-    if (!getLegalMoves(board).includes(column)) {
-        console.log("Illegal move. Column is full.");
-        return false;
-    }
-    // Place the piece in the first empty space in the column
-    for (let row = 0; row < board.length; row++) {
+    // Iterate from the bottom row upwards
+    for (let row = board.length - 1; row >= 0; row--) {
         if (board[row][column] === 0) {
             board[row][column] = player;
             return true; // Move was successful
         }
     }
+    console.log("Illegal move. Column is full.");
+    return false;
 }
+
+// function makeMove(board, column, player) {
+//     // Check if the move is legal
+//     if (!getLegalMoves(board).includes(column)) {
+//         console.log("Illegal move. Column is full.");
+//         return false;
+//     }
+//     // Place the piece in the first empty space in the column
+//     for (let row = 0; row < board.length; row++) {
+//         if (board[row][column] === 0) {
+//             board[row][column] = player;
+//             return true; // Move was successful
+//         }
+//     }
+// }
 
 // console.log("Initial Board:");
 // console.log(board);
@@ -93,41 +132,45 @@ function playGame() {
 
     if (currentPlayer === 1) {
         // Wait for Player 1's move (human)
-        // This will be triggered by an event, like clicking a column on the UI
+        document.addEventListener('click', handlePlayerMove);
     } else {
+        document.removeEventListener('click', handlePlayerMove);
         // Randomly select a column from the legal moves
         let randomIndex = Math.floor(Math.random() * legalMoves.length);
         let selectedColumn = legalMoves[randomIndex];
         // Make the move for the computer
         makeMove(board, selectedColumn, currentPlayer);
         console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
-
+        updateBoardDisplay();
         // Check for win
         if (checkWin(board, currentPlayer)) {
+            showWinningModal(currentPlayer)
             console.log(`Player ${currentPlayer} (Computer) Wins!`);
             resetBoard();
             return;
         }
         // Switch to Player 1 for the next turn
         currentPlayer = 1;
+        // Optionally, print the board state after each move
+        console.log(`Board after turn:`);
+        console.log(board);
     }
 
-    // Optionally, print the board state after each move
-    console.log(`Board after turn:`);
-    console.log(board);
 }     
 
 // Function to handle Player 1's move (to be called by event handler)
-function playerMove(column) {
+function handlePlayerMove(column) {
     if (currentPlayer === 1) {
         if (!getLegalMoves(board).includes(column)) {
             console.log("Illegal move. Try another column.");
             return;
         }
         makeMove(board, column, currentPlayer);
-        console.log(`Player ${currentPlayer} moved in column ${column}`);
+        // console.log(`Player ${currentPlayer} moved in column ${column}`);
+        updateBoardDisplay(); // You will need to implement this function
 
         if (checkWin(board, currentPlayer)) {
+            showWinningModal(currentPlayer)
             console.log(`Player ${currentPlayer} Wins!`);
             resetBoard();
         } else {
@@ -135,10 +178,43 @@ function playerMove(column) {
             currentPlayer = 2;
             playGame(); // Continue the game with the computer's move
         }
+        // Optionally, print the board state after each move
+        console.log(`Board after turn:`);
+        console.log(board);
+    }
+}
+
+function updateBoardDisplay() {
+    for (let row = 0; row < board.length; row++) {
+        for (let col = 0; col < board[row].length; col++) {
+            let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
+            cell.textContent = ''; // Clear previous content
+
+            cell.classList.remove('player-1', 'player-2'); // Remove previous classes
+            if (board[row][col] === 1) {
+                cell.classList.add('player-1');
+            } else if (board[row][col] === 2) {
+                cell.classList.add('player-2');
+            }
+        }
     }
 }
 
 
+// function updateBoardDisplay() {
+//     for (let row = 0; row < board.length; row++) {
+//         for (let col = 0; col < board[row].length; col++) {
+//             let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
+//             cell.textContent = board[row][col]; // This sets the text inside the cell based on the board state
+//             // Optionally, add different classes or styles depending on the player
+//             if (board[row][col] === 1) {
+//                 cell.classList.add('player-one');
+//             } else if (board[row][col] === 2) {
+//                 cell.classList.add('player-two');
+//             }
+//         }
+//     }
+// }
 // function playGame(board, maxTurns) {
 //     let currentPlayer = 1; // Start with Player 1
 
@@ -180,17 +256,18 @@ function checkWin(board, player) {
         for (let col = 0; col < board[0].length - 3; col++) {
             if (board[row][col] === player && board[row][col + 1] === player &&
                 board[row][col + 2] === player && board[row][col + 3] === player) {
-                return true;
+                    return [{row, col}, {row, col: col + 1}, {row, col: col + 2}, {row, col: col + 3}];
+                // return true;
             }
         }
     }
-
     // Check vertical
     for (let col = 0; col < board[0].length; col++) {
         for (let row = 0; row < board.length - 3; row++) {
             if (board[row][col] === player && board[row + 1][col] === player &&
                 board[row + 2][col] === player && board[row + 3][col] === player) {
-                return true;
+                    return [{row, col}, {row: row + 1, col}, {row: row + 2, col}, {row: row + 3, col}];
+                // return true;
             }
         }
     }
@@ -200,7 +277,7 @@ function checkWin(board, player) {
         for (let col = 0; col < board[0].length - 3; col++) {
             if (board[row][col] === player && board[row + 1][col + 1] === player &&
                 board[row + 2][col + 2] === player && board[row + 3][col + 3] === player) {
-                    return true;
+                    return [{row, col}, {row: row + 1, col: col + 1}, {row: row + 2, col: col + 2}, {row: row + 3, col: col + 3}];
             }
         }
     }
@@ -210,7 +287,7 @@ function checkWin(board, player) {
         for (let col = 0; col < board[0].length - 3; col++) {
             if (board[row][col] === player && board[row - 1][col + 1] === player &&
                 board[row - 2][col + 2] === player && board[row - 3][col + 3] === player) {
-                return true;
+                    return [{row, col}, {row: row - 1, col: col + 1}, {row: row - 2, col: col + 2}, {row: row - 3, col: col + 3}];
             }
         }
     }
@@ -218,6 +295,77 @@ function checkWin(board, player) {
 }
 
 // Start the game for a maximum of 42 turns (6 rows * 7 columns)
-playGame(board, 30);
+// playGame(board, 30);
 
 
+// Custom modal function
+function showWinningModal(player) {
+    const modal = document.getElementById("winning-modal");
+    const modalContent = document.getElementById("modal-content");
+
+    // Create a new element for the winning message
+    const winnerMessage = document.createElement("div");
+    winnerMessage.id = "winner-message";
+    winnerMessage.textContent = `Player ${player} wins!! 🎉`;
+
+    // Apply styling to the new element
+    winnerMessage.style.fontSize = "150px";
+    winnerMessage.style.color = "#3498db";
+    winnerMessage.style.fontWeight = "bold";
+
+    // Append the new element to the modal content
+    modalContent.appendChild(winnerMessage);
+
+    // Show the modal
+    modal.style.display = "block";
+
+    // You can add animations or other visual effects here
+    addBalloons(10, 5000);
+
+    // Close the modal after a delay (e.g., 5 seconds)
+    setTimeout(() => {
+        modal.style.display = "none";
+        // resetGame();
+
+        // Remove the winner message element
+        modalContent.removeChild(winnerMessage);
+    }, 5000);
+}
+
+
+
+// Function to create a balloon element with string
+function createBalloon() {
+    const balloon = document.createElement("div");
+    balloon.className = "balloon";
+
+    // Create the string element
+    const string = document.createElement("div");
+    string.className = "string";
+
+    // Append the string to the balloon
+    balloon.appendChild(string);
+
+    return balloon;
+}
+
+
+// Function to add balloons to the balloons container
+function addBalloons(numBalloons, duration) {
+    const balloonsContainer = document.getElementById("balloons-container");
+
+    for (let i = 0; i < numBalloons; i++) {
+        const balloon = createBalloon();
+        balloonsContainer.appendChild(balloon);
+
+        // Set a random position for each balloon
+        const randomX = Math.floor(Math.random() * window.innerWidth);
+        const randomY = Math.floor(Math.random() * window.innerHeight);
+        balloon.style.left = `${randomX}px`;
+        balloon.style.top = `${randomY}px`;
+        // Remove the balloon after the specified duration
+        setTimeout(() => {
+            balloonsContainer.removeChild(balloon);
+        }, duration);
+    }
+}
