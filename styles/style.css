@@ -71,4 +71,74 @@ html {
     pointer-events: none; /* Disable further clicks on filled cells */
   }
 
-  
+  /* Winning Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 40px; /* Increase padding for more space */
+    border-radius: 20px; /* Round corners more */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a subtle box shadow */
+    max-width: 600px; /* Set maximum width for responsiveness */
+    text-align: center;
+    position: relative;
+}
+
+/* Style for the winning message */
+#winner-message {
+    font-size: 150px;
+    color: #3498db; 
+    font-weight: bold;
+}
+
+/* Center the modal content */
+.modal.active .modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Balloon Styles */
+.balloon {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    background-color: #f00; /* Balloon color */
+    border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+    position: absolute;
+    animation: floatUp 5s linear infinite; /* Balloon animation */
+}
+
+.string {
+    position: absolute;
+    width: 2px;
+    height: 40px; /* Adjust the string length */
+    background-color: #333; /* String color */
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-1px); /* Center the string */
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-100px);
+    }
+}
+
+

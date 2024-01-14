@@ -35,13 +35,13 @@ if (!localStorage.getItem("name")) {
   };
 
 
-
+  let movesCount = 0;
 // Creating the playing grid
 document.addEventListener("DOMContentLoaded", function() {
 const gridContainer = document.getElementById("grid-container");
 const newGameButton = document.getElementById("new-game-button");
 let currentPlayer = 1; // 1 represents Player 1, 2 represents Player 2
-let movesCount = 0;
+
 
 // Create the grid
 function createGrid() {
@@ -76,28 +76,6 @@ function getBottomCell(col) {
     return null; // Column is full
 }
 
-
-//   // Check for a winning condition
-// function checkForWin(row, col) {
-//     // Check horizontally, vertically, and diagonally
-//     if (
-//         checkLine(row, col, 0, 1) ||
-//         checkLine(row, col, 1, 0) ||
-//         checkLine(row, col, -1, 1) ||
-//         checkLine(row, col, 1, 1)
-//       ) {
-//         return true;
-//       }
-//     // Check for a tie game
-//     movesCount++;
-//     if (movesCount === 42) {
-//       alert("It's a cat's game!");
-//       createGrid(); // Reset the game
-//       movesCount = 0; // Reset moves count
-//     }
-//     return false;
-// }
-
 function checkForWin(row, col) {
     // Check horizontally, vertically, and diagonally
     if (
@@ -107,40 +85,16 @@ function checkForWin(row, col) {
       ) {
         return true;
       }
-    // Check for a tie game
-    movesCount++;
-    if (movesCount === 42) {
-      alert("It's a cat's game!");
-      createGrid(); // Reset the game
-      movesCount = 0; // Reset moves count
-    }
     return false;
 }
 
-// function checkLine(row, col, rowIncrement, colIncrement) {
-//     const playerClass = `player-${currentPlayer}`;
-//     // Iterate through the range of four cells
-//     for (let i = 0; i < 4; i++) {
-//         const checkRow = row + i * rowIncrement;
-//         const checkCol = col + i * colIncrement;
-//         const cell = document.querySelector(
-//             `.cell[data-row="${checkRow}"][data-col="${checkCol}"]`
-//         );
-
-//         // Check if the cell exists
-//         if (!cell) {
-//             return false;
-//         }
-        
-//         // Check if the cell belongs to the current player or is empty
-//         if (cell.classList.contains(playerClass)) {
-//             continue; // Move to the next cell in the sequence
-//         } else {
-//             return false; // If the cell belongs to the opponent, it breaks the sequence
-//         }
-//     }
-//     return true; // All four cells are either empty or belong to the current player
-// }
+function checkForTie() {
+    // Check for a tie game
+    if (movesCount === 42) {
+        return true
+    }
+    return false
+}
 
 function checkHorizontal(row, col) {
     const playerClass = `player-${currentPlayer}`;
@@ -232,6 +186,41 @@ function checkDiagonal(row, col) {
     return false
 }
 
+// Custom modal function
+function showWinningModal(player) {
+    const modal = document.getElementById("winning-modal");
+    const modalContent = document.getElementById("modal-content");
+
+    // Create a new element for the winning message
+    const winnerMessage = document.createElement("div");
+    winnerMessage.id = "winner-message";
+    winnerMessage.textContent = `Player ${player} wins! 🎉`;
+
+    // Apply styling to the new element
+    winnerMessage.style.fontSize = "100px";
+    winnerMessage.style.color = "#3498db";
+    winnerMessage.style.fontWeight = "bold";
+
+    // Append the new element to the modal content
+    modalContent.appendChild(winnerMessage);
+
+    // Show the modal
+    modal.style.display = "block";
+
+    // You can add animations or other visual effects here
+    addBalloons(10, 5000);
+
+    // Close the modal after a delay (e.g., 5 seconds)
+    setTimeout(() => {
+        modal.style.display = "none";
+        resetGame();
+
+        // Remove the winner message element
+        modalContent.removeChild(winnerMessage);
+    }, 5000);
+}
+
+
 function resetGame() {
     currentPlayer = 1;
     createGrid(); // Reset the game
@@ -240,29 +229,38 @@ function resetGame() {
 
 // Handle cell click
 function handleCellClick(cell) {
+    // Increment moves count
+    movesCount++;
     const row = cell.getAttribute("data-row");
     const col = cell.getAttribute("data-col");
     console.log(`Player ${currentPlayer} clicked on cell at row ${row}, column ${col}`);
+    console.log(`Total moves: ${movesCount}`)
   
     // Get the bottommost unfilled cell in the clicked column
     const bottomCell = getBottomCell(col);
   
     // Check if the cell is already colored and the column is not full
-    if (bottomCell && !bottomCell.classList.contains("filled")) {
+    if (cell === bottomCell && !bottomCell.classList.contains("filled")) {
         // Toggle color based on the current player
         bottomCell.classList.add(`player-${currentPlayer}`);
         bottomCell.classList.add("filled");
   
       // Check for a winning condition or a tie game
         if (checkForWin(parseInt(row), parseInt(col))) {
-            alert(`Player ${currentPlayer} wins!`);
+            // alert(`Player ${currentPlayer} wins!`);
+            showWinningModal(currentPlayer);
+            resetGame();
+        } else if (checkForTie()) {
+            alert("It's a cat's game!!");
             resetGame();
         } else {
             // Switch to the next player
             currentPlayer = currentPlayer === 1 ? 2 : 1;
-            // Increment moves count
-            movesCount++;
         }
+    } else if (bottomCell.classList.contains("filled")) {
+        alert('You cannot go there; that cell is already filled.')
+    } else {
+        alert('You can only go in the bottommost cell in a column.')
     }
 }
   
@@ -282,3 +280,48 @@ resetGame();
 newGameButton.addEventListener("click", resetGame);
 
 });
+
+
+// Function to create a balloon element with string
+function createBalloon() {
+    const balloon = document.createElement("div");
+    balloon.className = "balloon";
+
+    // Create the string element
+    const string = document.createElement("div");
+    string.className = "string";
+
+    // Append the string to the balloon
+    balloon.appendChild(string);
+
+    return balloon;
+}
+
+
+// Function to add balloons to the balloons container
+function addBalloons(numBalloons, duration) {
+    const balloonsContainer = document.getElementById("balloons-container");
+
+    for (let i = 0; i < numBalloons; i++) {
+        const balloon = createBalloon();
+        balloonsContainer.appendChild(balloon);
+
+        // Set a random position for each balloon
+        const randomX = Math.floor(Math.random() * window.innerWidth);
+        const randomY = Math.floor(Math.random() * window.innerHeight);
+        balloon.style.left = `${randomX}px`;
+        balloon.style.top = `${randomY}px`;
+        // Remove the balloon after the specified duration
+        setTimeout(() => {
+            balloonsContainer.removeChild(balloon);
+        }, duration);
+    }
+}
+
+// Call the function to add balloons when a player wins
+function showWinningModal(player) {
+    // ... (existing code)
+
+    // Add balloons when a player wins
+    addBalloons(10); // Adjust the number of balloons as needed
+}
