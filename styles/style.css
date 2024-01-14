@@ -53,6 +53,11 @@ html {
     /* Additional styling */
 }
 
+.winning-cell {
+  border: 2px solid black; /* Style for highlighting winning cells */
+}
+
+
 
   /* .cell {
     width: 50px;

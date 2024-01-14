@@ -33,21 +33,53 @@ function initializeBoard(rows=6, cols=7) {
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the 'New Game' button by its ID
+    var newGameButton = document.getElementById('new-game-button');
+
+    // Add click event listener to the button
+    newGameButton.addEventListener('click', function() {
+        resetBoard(withDelay = false, removeBlocks = true);
+        // Any additional logic to start a new game can go here
+        // For example, clearing any game-over messages, resetting scores, etc.
+    });
+});
+
+
 
 // let rows = 6; // Number of rows
 // let cols = 7; // Number of columns
 let board = [];
 initializeBoard();
 
-function resetBoard() {
-    // Reset the board to its initial state
-    for (let row = 0; row < board.length; row++) {
-        for (let col = 0; col < board[row].length; col++) {
-            board[row][col] = 0;
+function resetBoard(withDelay = true, removeBlocks = false) {
+
+    function resetLogic(removeBlocks) {
+        // Reset the board to its initial state
+        for (let row = 0; row < board.length; row++) {
+            for (let col = 0; col < board[row].length; col++) {
+                board[row][col] = 0;
+            }
         }
+
+        // Clear winning cell highlights
+        let allCells = document.querySelectorAll('.board-cell');
+        allCells.forEach(cell => {
+            cell.classList.remove('winning-cell');
+            if (removeBlocks) {
+                cell.classList.remove('player-1', 'player-2');
+                cell.style = null;
+            }
+        });
+        // Reset other game states if necessary (e.g., currentPlayer)
+        currentPlayer = 1; // Assuming Player 1 starts the game
     }
-    // Reset other game states if necessary (e.g., currentPlayer)
-    currentPlayer = 1; // Assuming Player 1 starts the game
+
+    if (withDelay) {
+        setTimeout(function() { resetLogic(removeBlocks); }, 5000);
+    } else {
+        resetLogic(removeBlocks = removeBlocks);
+    }
 }
 
 
@@ -118,46 +150,6 @@ function makeMove(board, column, player) {
 //     console.log(board);
 // }
 
-
-let currentPlayer = 1; // Start with Player 1
-
-function playGame() {
-
-    let legalMoves = getLegalMoves(board);
-    if (legalMoves.length === 0) {
-        console.log("It's a cat's game!!!");
-        resetBoard();
-        return;
-    }
-
-    if (currentPlayer === 1) {
-        // Wait for Player 1's move (human)
-        document.addEventListener('click', handlePlayerMove);
-    } else {
-        document.removeEventListener('click', handlePlayerMove);
-        // Randomly select a column from the legal moves
-        let randomIndex = Math.floor(Math.random() * legalMoves.length);
-        let selectedColumn = legalMoves[randomIndex];
-        // Make the move for the computer
-        makeMove(board, selectedColumn, currentPlayer);
-        console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
-        updateBoardDisplay();
-        // Check for win
-        if (checkWin(board, currentPlayer)) {
-            showWinningModal(currentPlayer)
-            console.log(`Player ${currentPlayer} (Computer) Wins!`);
-            resetBoard();
-            return;
-        }
-        // Switch to Player 1 for the next turn
-        currentPlayer = 1;
-        // Optionally, print the board state after each move
-        console.log(`Board after turn:`);
-        console.log(board);
-    }
-
-}     
-
 // Function to handle Player 1's move (to be called by event handler)
 function handlePlayerMove(column) {
     if (currentPlayer === 1) {
@@ -168,11 +160,11 @@ function handlePlayerMove(column) {
         makeMove(board, column, currentPlayer);
         // console.log(`Player ${currentPlayer} moved in column ${column}`);
         updateBoardDisplay(); // You will need to implement this function
-
-        if (checkWin(board, currentPlayer)) {
-            showWinningModal(currentPlayer)
-            console.log(`Player ${currentPlayer} Wins!`);
-            resetBoard();
+        // Check for win
+        let checkWinResult = checkWin(board, currentPlayer);
+        if (checkWinResult) {
+            celebrateWin(checkWinResult, currentPlayer);
+            return;
         } else {
             // Switch to the computer player
             currentPlayer = 2;
@@ -199,56 +191,6 @@ function updateBoardDisplay() {
         }
     }
 }
-
-
-// function updateBoardDisplay() {
-//     for (let row = 0; row < board.length; row++) {
-//         for (let col = 0; col < board[row].length; col++) {
-//             let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
-//             cell.textContent = board[row][col]; // This sets the text inside the cell based on the board state
-//             // Optionally, add different classes or styles depending on the player
-//             if (board[row][col] === 1) {
-//                 cell.classList.add('player-one');
-//             } else if (board[row][col] === 2) {
-//                 cell.classList.add('player-two');
-//             }
-//         }
-//     }
-// }
-// function playGame(board, maxTurns) {
-//     let currentPlayer = 1; // Start with Player 1
-
-//     for (let turn = 0; turn < maxTurns; turn++) {
-//         let legalMoves = getLegalMoves(board);
-//         if (legalMoves.length === 0) {
-//             console.log("It's a cat's game!!!");
-//             break;
-//         }
-
-//         // Randomly select a column from the legal moves
-//         let randomIndex = Math.floor(Math.random() * legalMoves.length);
-//         let selectedColumn = legalMoves[randomIndex];
-
-//         // Make the move
-//         makeMove(board, selectedColumn, currentPlayer);
-//         console.log(`Player ${currentPlayer} moved in col ${selectedColumn}`)
-
-//         // Check for win
-//         if (checkWin(board, player=currentPlayer)) {
-//             console.log(`Player ${currentPlayer} Wins!`)
-//             resetBoard()
-//             return;
-//         } else {
-//             // Switch to the other player for the next turn
-//             currentPlayer = currentPlayer === 1 ? 2 : 1;
-//         }
-
-//         // Optionally, print the board state after each move
-
-//         console.log(`Board after turn ${turn + 1}:`);
-//         console.log(board);
-//     }
-// }
 
 function checkWin(board, player) {
     // Check horizontal
@@ -293,6 +235,75 @@ function checkWin(board, player) {
     }
     return false
 }
+
+function celebrateWin(winCheckResult, currentPlayer) {
+    winCheckResult.forEach(cell => {
+        let winningCell = document.querySelector(`.board-row:nth-child(${cell.row + 1}) .board-cell:nth-child(${cell.col + 1})`);
+        winningCell.classList.add('winning-cell');
+    });
+    showWinningModal(currentPlayer);
+    console.log(`Player ${currentPlayer} Wins!`);
+    resetBoard(withDelay=true);
+}
+
+
+
+
+let currentPlayer = 1; // Start with Player 1
+
+function playGame() {
+
+    let legalMoves = getLegalMoves(board);
+    if (legalMoves.length === 0) {
+        alert("It's a cat's game!!!");
+        resetBoard(withDelay=true);
+        return;
+    }
+
+    if (currentPlayer === 1) {
+        // Wait for Player 1's move (human)
+        document.addEventListener('click', handlePlayerMove);
+    } else {
+        document.removeEventListener('click', handlePlayerMove);
+        // Randomly select a column from the legal moves
+        let randomIndex = Math.floor(Math.random() * legalMoves.length);
+        let selectedColumn = legalMoves[randomIndex];
+        // Make the move for the computer
+        makeMove(board, selectedColumn, currentPlayer);
+        console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
+        updateBoardDisplay();
+        // Check for win
+        let checkWinResult = checkWin(board, currentPlayer)
+        if (checkWinResult) {
+            celebrateWin(checkWinResult, currentPlayer)
+            return;
+        }
+        // Switch to Player 1 for the next turn
+        currentPlayer = 1;
+        // Optionally, print the board state after each move
+        console.log(`Board after turn:`);
+        console.log(board);
+    }
+
+}     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Start the game for a maximum of 42 turns (6 rows * 7 columns)
 // playGame(board, 30);
