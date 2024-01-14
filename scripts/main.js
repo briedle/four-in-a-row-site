@@ -81,7 +81,8 @@ function checkForWin(row, col) {
     if (
         checkHorizontal(row, col) ||
         checkVertical(row, col) ||
-        checkDiagonal(row, col)
+        checkPositiveDiagonal(row, col) || 
+        checkNegativeDiagonal(row, col)
       ) {
         return true;
       }
@@ -125,7 +126,6 @@ function checkHorizontal(row, col) {
     return false
 }
     
-
 function checkVertical(row, col) {
     const playerClass = `player-${currentPlayer}`;
     // Iterate through the range of four cells
@@ -155,7 +155,7 @@ function checkVertical(row, col) {
     return false
 }
 
-function checkDiagonal(row, col) {
+function checkPositiveDiagonal(row, col) {
     const playerClass = `player-${currentPlayer}`;
     // Iterate through the range of four cells
     for (let i = -3; i < 1; i++) {
@@ -163,6 +163,37 @@ function checkDiagonal(row, col) {
             // console.log()
             const checkRow = row + i + j;
             const checkCol = col + i + j;
+            const cell = document.querySelector(
+                `.cell[data-row="${checkRow}"][data-col="${checkCol}"]`
+            );
+            // Check if the cell exists
+            if (!cell) {
+                break;
+            }
+            // If we have made it all the way to the fourth check of playerClass
+            // below, then the current player wins
+            if (j === 3 && cell.classList.contains(playerClass)) {
+                return true
+            }
+            // Check if the cell belongs to the current player or is empty
+            if (cell.classList.contains(playerClass)) {
+                continue; // Move to the next cell in the sequence
+            } else {
+                break; // If the cell belongs to the opponent, it breaks the sequence
+            }
+        }
+    }
+    return false
+}
+
+function checkNegativeDiagonal(row, col) {
+    const playerClass = `player-${currentPlayer}`;
+    // Iterate through the range of four cells
+    for (let i = -3; i < 1; i++) {
+        for (let j = 0; j < 4; j++) {
+            // console.log()
+            const checkRow = row + i + j;
+            const checkCol = col + i - j;
             const cell = document.querySelector(
                 `.cell[data-row="${checkRow}"][data-col="${checkCol}"]`
             );
@@ -194,10 +225,10 @@ function showWinningModal(player) {
     // Create a new element for the winning message
     const winnerMessage = document.createElement("div");
     winnerMessage.id = "winner-message";
-    winnerMessage.textContent = `Player ${player} wins! 🎉`;
+    winnerMessage.textContent = `Player ${player} wins!! 🎉`;
 
     // Apply styling to the new element
-    winnerMessage.style.fontSize = "100px";
+    winnerMessage.style.fontSize = "150px";
     winnerMessage.style.color = "#3498db";
     winnerMessage.style.fontWeight = "bold";
 
@@ -219,7 +250,6 @@ function showWinningModal(player) {
         modalContent.removeChild(winnerMessage);
     }, 5000);
 }
-
 
 function resetGame() {
     currentPlayer = 1;
@@ -248,7 +278,12 @@ function handleCellClick(cell) {
       // Check for a winning condition or a tie game
         if (checkForWin(parseInt(row), parseInt(col))) {
             // alert(`Player ${currentPlayer} wins!`);
-            showWinningModal(currentPlayer);
+            // if (currentPlayer === 1) {
+            // showWinningModal(player1Name);
+            // } else {
+            //     showWinningModal(player2Name)
+            // }
+            showWinningModal(currentPlayer)
             resetGame();
         } else if (checkForTie()) {
             alert("It's a cat's game!!");
@@ -264,17 +299,21 @@ function handleCellClick(cell) {
     }
 }
   
+// // Function to prompt players for their names
+// function promptForPlayerNames() {
+//     const player1Name = prompt("Enter name for Player 1:");
+//     const player2Name = prompt("Enter name for Player 2:");
 
+//     // You can handle the player names as needed (e.g., display them on the UI)
+//     console.log(`Player 1: ${player1Name}`);
+//     console.log(`Player 2: ${player2Name}`);
+// }
+
+// // Initialize the game by prompting for player names
+// promptForPlayerNames();
 // Initialize the grid
 resetGame();
   
-// // Add event listener to each cell
-// const cells = document.querySelectorAll(".cell");
-// cells.forEach(cell => {
-//     cell.addEventListener("click", () => {
-//     handleCellClick(cell);
-//     });
-// });
 
 // Add event listener to the New Game button
 newGameButton.addEventListener("click", resetGame);
@@ -316,12 +355,4 @@ function addBalloons(numBalloons, duration) {
             balloonsContainer.removeChild(balloon);
         }, duration);
     }
-}
-
-// Call the function to add balloons when a player wins
-function showWinningModal(player) {
-    // ... (existing code)
-
-    // Add balloons when a player wins
-    addBalloons(10); // Adjust the number of balloons as needed
 }
