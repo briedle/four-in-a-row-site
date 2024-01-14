@@ -42,8 +42,29 @@ document.addEventListener('DOMContentLoaded', function() {
         resetBoard(withDelay = false, removeBlocks = true);
         // Any additional logic to start a new game can go here
         // For example, clearing any game-over messages, resetting scores, etc.
+        if (gameMode == 'computerVsComputer') {
+            currentPlayer = 1;
+            makeComputerMove();
+        }
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    var gameModeSelector = document.getElementById('game-mode-selector');
+    gameModeSelector.addEventListener('change', function() {
+        previousMode = gameMode
+        gameMode = this.value; // Update the gameMode variable based on the selection
+        console.log(`gameMode went from ${previousMode} to ${gameMode}`)
+        // Optionally, you can also reset the game state or board here
+        resetBoard(withDelay = false, removeBlocks = true)
+        if (gameMode === 'computerVsComputer') {
+            currentPlayer = 1; // Start with Player 1
+            makeComputerMove(); // Trigger the first computer move
+        }
+    });
+});
+
+
 
 
 
@@ -150,31 +171,7 @@ function makeMove(board, column, player) {
 //     console.log(board);
 // }
 
-// Function to handle Player 1's move (to be called by event handler)
-function handlePlayerMove(column) {
-    if (currentPlayer === 1) {
-        if (!getLegalMoves(board).includes(column)) {
-            console.log("Illegal move. Try another column.");
-            return;
-        }
-        makeMove(board, column, currentPlayer);
-        // console.log(`Player ${currentPlayer} moved in column ${column}`);
-        updateBoardDisplay(); // You will need to implement this function
-        // Check for win
-        let checkWinResult = checkWin(board, currentPlayer);
-        if (checkWinResult) {
-            celebrateWin(checkWinResult, currentPlayer);
-            return;
-        } else {
-            // Switch to the computer player
-            currentPlayer = 2;
-            playGame(); // Continue the game with the computer's move
-        }
-        // Optionally, print the board state after each move
-        console.log(`Board after turn:`);
-        console.log(board);
-    }
-}
+
 
 function updateBoardDisplay() {
     for (let row = 0; row < board.length; row++) {
@@ -248,44 +245,119 @@ function celebrateWin(winCheckResult, currentPlayer) {
 
 
 
-
+let gameMode = 'humanVsComputer'; // Default game mode
 let currentPlayer = 1; // Start with Player 1
 
-function playGame() {
-
-    let legalMoves = getLegalMoves(board);
-    if (legalMoves.length === 0) {
-        alert("It's a cat's game!!!");
-        resetBoard(withDelay=true);
+function handlePlayerMove(column) {
+    if (!getLegalMoves(board).includes(column)) {
+        console.log("Illegal move. Try another column.");
         return;
     }
 
-    if (currentPlayer === 1) {
-        // Wait for Player 1's move (human)
-        document.addEventListener('click', handlePlayerMove);
+    makeMove(board, column, currentPlayer);
+    updateBoardDisplay();
+
+    let checkWinResult = checkWin(board, currentPlayer);
+    if (checkWinResult) {
+        celebrateWin(checkWinResult, currentPlayer);
     } else {
-        document.removeEventListener('click', handlePlayerMove);
-        // Randomly select a column from the legal moves
-        let randomIndex = Math.floor(Math.random() * legalMoves.length);
-        let selectedColumn = legalMoves[randomIndex];
-        // Make the move for the computer
-        makeMove(board, selectedColumn, currentPlayer);
-        console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
-        updateBoardDisplay();
-        // Check for win
-        let checkWinResult = checkWin(board, currentPlayer)
-        if (checkWinResult) {
-            celebrateWin(checkWinResult, currentPlayer)
-            return;
-        }
-        // Switch to Player 1 for the next turn
-        currentPlayer = 1;
-        // Optionally, print the board state after each move
-        console.log(`Board after turn:`);
-        console.log(board);
+        // Switch to the next player
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        playGame();
+    }
+    console.log(`Board after turn:`);
+    console.log(board);
+}
+
+
+function makeComputerMove() {
+    // Randomly select a column from the legal moves
+    let legalMoves = getLegalMoves(board);
+    let randomIndex = Math.floor(Math.random() * legalMoves.length);
+    let selectedColumn = legalMoves[randomIndex];
+    // Make the move for the computer
+    makeMove(board, selectedColumn, currentPlayer);
+    console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
+    updateBoardDisplay();
+    // Check for win
+    let checkWinResult = checkWin(board, currentPlayer)
+    if (checkWinResult) {
+        celebrateWin(checkWinResult, currentPlayer)
+        return;
+    } else {
+        // Switch to the next player
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        playGame();
+    }
+    // Optionally, print the board state after each move
+    console.log(`Board after turn:`);
+    console.log(board);
+}
+
+function playGame() {
+    document.removeEventListener('click', handlePlayerMove);
+    console.log(`game mode registered as ${gameMode}`)
+    let legalMoves = getLegalMoves(board);
+    if (legalMoves.length === 0) {
+        console.log("It's a cat's game!!!");
+        alert("It's a cat's game!!!")
+        resetBoard();
+        return;
     }
 
-}     
+    if (
+        gameMode === 'humanVsHuman' ||
+        (gameMode === 'humanVsComputer' && currentPlayer === 1)
+        ) {
+        // Add the event listener for a human player's move
+        document.addEventListener('click', handlePlayerMove);
+    } else if (gameMode === 'humanVsComputer' && currentPlayer === 2) {
+        // Computer's turn in human vs. computer mode
+        makeComputerMove();
+    } else if (gameMode === 'computerVsComputer') {
+        // Both players are computer
+        makeComputerMove();
+    }
+}
+
+
+
+
+// function playGame() {
+
+//     let legalMoves = getLegalMoves(board);
+//     if (legalMoves.length === 0) {
+//         alert("It's a cat's game!!!");
+//         resetBoard(withDelay=true, removeBlocks = false);
+//         return;
+//     }
+
+//     if (currentPlayer === 1) {
+//         // Wait for Player 1's move (human)
+//         document.addEventListener('click', handlePlayerMove);
+//     } else {
+//         document.removeEventListener('click', handlePlayerMove);
+//         // Randomly select a column from the legal moves
+//         let randomIndex = Math.floor(Math.random() * legalMoves.length);
+//         let selectedColumn = legalMoves[randomIndex];
+//         // Make the move for the computer
+//         makeMove(board, selectedColumn, currentPlayer);
+//         console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
+//         updateBoardDisplay();
+//         // Check for win
+//         let checkWinResult = checkWin(board, currentPlayer)
+//         if (checkWinResult) {
+//             celebrateWin(checkWinResult, currentPlayer)
+//             return;
+//         }
+//         // Switch to Player 1 for the next turn
+//         currentPlayer = 1;
+//         // Optionally, print the board state after each move
+//         console.log(`Board after turn:`);
+//         console.log(board);
+//     }
+
+// }     
 
 
 
