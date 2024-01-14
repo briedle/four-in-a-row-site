@@ -192,7 +192,7 @@ function checkNegativeDiagonal(row, col) {
     for (let i = -3; i < 1; i++) {
         for (let j = 0; j < 4; j++) {
             // console.log()
-            const checkRow = row + i + j;
+            const checkRow = row - i + j;
             const checkCol = col + i - j;
             const cell = document.querySelector(
                 `.cell[data-row="${checkRow}"][data-col="${checkCol}"]`
