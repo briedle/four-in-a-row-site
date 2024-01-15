@@ -2,18 +2,19 @@ let board = [];
 MAX_CELL_SIZE = 300;
 let rows = 6; // Default rows
 let columns = 7; // Default columns
+let gameMode = 'humanVsComputer'; // Default game mode
+let currentPlayer = 1; // Start with Player 1
 
 // Then call initializeBoard with default values when the page loads
 initializeBoard(rows, columns); // Default rows and columns
 createBoard(rows, columns); // Create the visual board
 
-
-document.getElementById('gameBoard').addEventListener('click', function(event) {
-    if (event.target && event.target.matches('.board-cell')) {
-        const column = parseInt(event.target.dataset.column);
-        handlePlayerMove(column);
-    }
-});
+// document.getElementById('gameBoard').addEventListener('click', function(event) {
+//     if (event.target && event.target.matches('.board-cell')) {
+//         const column = parseInt(event.target.dataset.column);
+//         handlePlayerMove(column);
+//     }
+// });
 
 document.getElementById('updateBoard').addEventListener('click', function() {
     const newRows = parseInt(document.getElementById('rows').value, 10);
@@ -26,70 +27,6 @@ document.getElementById('updateBoard').addEventListener('click', function() {
     initializeBoard(rows, columns);
     createBoard(rows, columns);
 });
-
-
-
-function createBoard(rows, cols) {
-    const board = document.getElementById('gameBoard');
-    board.innerHTML = '';
-
-    const cellWidth = Math.min(
-        window.innerWidth / (1.5 * cols),
-        window.innerHeight / (1.5 * rows),
-         MAX_CELL_SIZE
-         );
-    const cellHeight = cellWidth;
-    // const cellWidth = Math.min(window.innerWidth / (2 * cols), MAX_CELL_SIZE);
-    // const cellHeight = Math.min(window.innerHeight / (2 * rows), MAX_CELL_SIZE);
-    console.log(`window.innerWidth: ${window.innerWidth}`)
-    console.log(`window.innerHeight: ${window.innerHeight}`)
-    console.log(`cell width: ${cellWidth}`)
-    console.log(`cell height: ${cellHeight}`)
-
-    for (let row = 0; row < rows; row++) {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'board-row';
-
-        for (let col = 0; col < cols; col++) {
-            const cellDiv = document.createElement('div');
-            cellDiv.className = 'board-cell';
-            cellDiv.style.width = `${cellWidth}px`;
-            cellDiv.style.height = `${cellHeight}px`;
-            cellDiv.dataset.column = col;
-            // ... rest of your cell setup ...
-            rowDiv.appendChild(cellDiv);
-        }
-        board.appendChild(rowDiv);
-    }
-}
-
-
-// function createBoard(rows, cols) {
-//     const board = document.getElementById('gameBoard');
-//     board.innerHTML = '';
-//     for (let row = 0; row < rows; row++) {
-//         const rowDiv = document.createElement('div');
-//         rowDiv.className = 'board-row';
-
-//         for (let col = 0; col < cols; col++) {
-//             const cellDiv = document.createElement('div');
-//             cellDiv.className = 'board-cell';
-//             cellDiv.dataset.column = col;
-//             rowDiv.appendChild(cellDiv);
-//         }
-
-//         board.appendChild(rowDiv);
-//     }
-// }
-
-function initializeBoard(rows=6, cols=7) {
-    board = [];
-    for (let i = 0; i < rows; i++) {
-        let row = new Array(cols).fill(0); // Filling the row with 0s (empty spaces)
-        board.unshift(row); // Adding the row at the beginning of the array
-    }
-}
-
 
 document.addEventListener('DOMContentLoaded', function() {
     // Get the 'New Game' button by its ID
@@ -125,7 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // const columns = parseInt(document.getElementById('columns').value, 10);
         resetBoard(withDelay = false, removeBlocks = true);
         createBoard(rows, columns);
-        if (gameMode === 'computerVsComputer') {
+        if (
+            gameMode === 'computerVsComputer' ||
+            gameMode === 'humanVsComputer'
+        ) {
             document.getElementById('delay-option').style.display = 'block';
             currentPlayer = 1; // Start with Player 1
             makeComputerMove(); // Trigger the first computer move
@@ -135,11 +75,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function createBoard(rows, cols) {
+    const board = document.getElementById('gameBoard');
+    board.innerHTML = '';
+
+    const cellWidth = Math.min(
+        window.innerWidth / (1.5 * cols),
+        window.innerHeight / (1.5 * rows),
+         MAX_CELL_SIZE
+         );
+    const cellHeight = cellWidth;
+    // const cellWidth = Math.min(window.innerWidth / (2 * cols), MAX_CELL_SIZE);
+    // const cellHeight = Math.min(window.innerHeight / (2 * rows), MAX_CELL_SIZE);
+    console.log(`window.innerWidth: ${window.innerWidth}`)
+    console.log(`window.innerHeight: ${window.innerHeight}`)
+    console.log(`cell width: ${cellWidth}`)
+    console.log(`cell height: ${cellHeight}`)
+
+    for (let row = 0; row < rows; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'board-row';
+
+        for (let col = 0; col < cols; col++) {
+            const cellDiv = document.createElement('div');
+            cellDiv.className = 'board-cell';
+            cellDiv.style.width = `${cellWidth}px`;
+            cellDiv.style.height = `${cellHeight}px`;
+            cellDiv.dataset.column = col;
+            // ... rest of your cell setup ...
+            rowDiv.appendChild(cellDiv);
+        }
+        board.appendChild(rowDiv);
+    }
+    // Need to add an event listener for the board
+    if (gameMode === 'humanVsHuman' || gameMode === 'humanVsComputer') {
+        document.getElementById('gameBoard').addEventListener('click', playGame);
+    }
+}
+
+function initializeBoard(rows=6, cols=7) {
+    board = [];
+    for (let i = 0; i < rows; i++) {
+        let row = new Array(cols).fill(0); // Filling the row with 0s (empty spaces)
+        board.unshift(row); // Adding the row at the beginning of the array
+    }
+}
 
 
-// let rows = 6; // Number of rows
-// let cols = 7; // Number of columns
-// initializeBoard(rows, columns);
+function updateBoardDisplay() {
+    for (let row = 0; row < board.length; row++) {
+        for (let col = 0; col < board[row].length; col++) {
+            let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
+            cell.textContent = ''; 
+            cell.classList.remove('winning-cell');
+            cell.classList.remove('player-1', 'player-2'); // Remove previous classes
+            if (board[row][col] === 1) {
+                cell.classList.add('player-1');
+            } else if (board[row][col] === 2) {
+                cell.classList.add('player-2');
+            }
+        }
+    }
+}
 
 function resetBoard(withDelay = true, removeBlocks = false) {
 
@@ -160,7 +157,7 @@ function resetBoard(withDelay = true, removeBlocks = false) {
             }
         });
         // Reset other game states if necessary (e.g., currentPlayer)
-        currentPlayer = 1; // Assuming Player 1 starts the game
+        currentPlayer = 1; 
     }
 
     if (withDelay) {
@@ -186,11 +183,7 @@ function getLegalMoves(board) {
     return legalMoves;
 }
 
-// createBoard();
-// console.log('Initial Board: ');
-// console.log(board);
-// console.log('legal moves:');
-// console.log(getLegalMoves(board));
+
 
 function makeMove(board, column, player) {
     // Iterate from the bottom row upwards
@@ -204,21 +197,7 @@ function makeMove(board, column, player) {
     return false;
 }
 
-function updateBoardDisplay() {
-    for (let row = 0; row < board.length; row++) {
-        for (let col = 0; col < board[row].length; col++) {
-            let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
-            cell.textContent = ''; 
-            cell.classList.remove('winning-cell');
-            cell.classList.remove('player-1', 'player-2'); // Remove previous classes
-            if (board[row][col] === 1) {
-                cell.classList.add('player-1');
-            } else if (board[row][col] === 2) {
-                cell.classList.add('player-2');
-            }
-        }
-    }
-}
+
 
 function checkWin(board, player) {
     // Check horizontal
@@ -276,14 +255,23 @@ function celebrateWin(winCheckResult, currentPlayer) {
 
 
 
-let gameMode = 'humanVsComputer'; // Default game mode
-let currentPlayer = 1; // Start with Player 1
+
+
+function handleBoardClick(event) {
+    if (event.target && event.target.matches('.board-cell')) {
+        const column = parseInt(event.target.dataset.column);
+        handlePlayerMove(column);
+        // Immediately remove the event listener to prevent further moves
+        document.getElementById('gameBoard').removeEventListener('click', handleBoardClick);
+    }
+}
 
 function handlePlayerMove(column) {
     if (!getLegalMoves(board).includes(column)) {
         console.log("Illegal move. Try another column.");
         return;
     }
+
 
     makeMove(board, column, currentPlayer);
     updateBoardDisplay();
@@ -308,7 +296,9 @@ function makeComputerMove() {
     let selectedColumn = legalMoves[randomIndex];
     // Make the move for the computer
     makeMove(board, selectedColumn, currentPlayer);
-    console.log(`Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`);
+    console.log(
+        `Player ${currentPlayer} (Computer) moved in column ${selectedColumn}`
+    );
     updateBoardDisplay();
     // Check for win
     let checkWinResult = checkWin(board, currentPlayer)
@@ -318,9 +308,9 @@ function makeComputerMove() {
     } else {
         // Switch to the next player
         currentPlayer = currentPlayer === 1 ? 2 : 1;
-        let delay = parseInt(document.getElementById('delay-time').value);
-        setTimeout(playGame, delay);
-        // playGame();
+        // let delay = parseInt(document.getElementById('delay-time').value);
+        // setTimeout(playGame, delay);
+        playGame();
     }
     // Optionally, print the board state after each move
     console.log(`Board after turn:`);
@@ -329,7 +319,6 @@ function makeComputerMove() {
 }
 
 function playGame() {
-    document.removeEventListener('click', handlePlayerMove);
     console.log(`game mode registered as ${gameMode}`)
     let legalMoves = getLegalMoves(board);
     if (legalMoves.length === 0) {
@@ -338,19 +327,20 @@ function playGame() {
         resetBoard();
         return;
     }
-
+    // It's a human's turn 
     if (
         gameMode === 'humanVsHuman' ||
         (gameMode === 'humanVsComputer' && currentPlayer === 1)
-        ) {
-        // Add the event listener for a human player's move
-        document.addEventListener('click', handlePlayerMove);
-    } else if (gameMode === 'humanVsComputer' && currentPlayer === 2) {
+    ) {
+      // Add the event listener for board clicks
+      // Note that handleBoardClick ccalls handlePlayerMove, which then removes the event listener
+      // so that a player can make multiple game moves
+      document.getElementById('gameBoard').addEventListener('click', handleBoardClick);
+    } else {
         // Computer's turn in human vs. computer mode
-        makeComputerMove();
-    } else if (gameMode === 'computerVsComputer') {
-        // Both players are computer
-        makeComputerMove();
+        let delay = parseInt(document.getElementById('delay-time').value);
+        setTimeout(makeComputerMove, delay);
+        
     }
 }
 
