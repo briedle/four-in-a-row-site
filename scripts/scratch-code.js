@@ -1,8 +1,11 @@
 let board = [];
+MAX_CELL_SIZE = 300;
+let rows = 6; // Default rows
+let columns = 7; // Default columns
 
 // Then call initializeBoard with default values when the page loads
-initializeBoard(6, 7); // Default rows and columns
-createBoard(6, 7); // Create the visual board
+initializeBoard(rows, columns); // Default rows and columns
+createBoard(rows, columns); // Create the visual board
 
 
 document.getElementById('gameBoard').addEventListener('click', function(event) {
@@ -13,15 +16,36 @@ document.getElementById('gameBoard').addEventListener('click', function(event) {
 });
 
 document.getElementById('updateBoard').addEventListener('click', function() {
-    const rows = parseInt(document.getElementById('rows').value, 10);
-    const columns = parseInt(document.getElementById('columns').value, 10);
+    const newRows = parseInt(document.getElementById('rows').value, 10);
+    const newColumns = parseInt(document.getElementById('columns').value, 10);
+    
+    // Update the rows and columns globally
+    rows = newRows;
+    columns = newColumns;
+
     initializeBoard(rows, columns);
     createBoard(rows, columns);
 });
 
+
+
 function createBoard(rows, cols) {
     const board = document.getElementById('gameBoard');
     board.innerHTML = '';
+
+    const cellWidth = Math.min(
+        window.innerWidth / (1.5 * cols),
+        window.innerHeight / (1.5 * rows),
+         MAX_CELL_SIZE
+         );
+    const cellHeight = cellWidth;
+    // const cellWidth = Math.min(window.innerWidth / (2 * cols), MAX_CELL_SIZE);
+    // const cellHeight = Math.min(window.innerHeight / (2 * rows), MAX_CELL_SIZE);
+    console.log(`window.innerWidth: ${window.innerWidth}`)
+    console.log(`window.innerHeight: ${window.innerHeight}`)
+    console.log(`cell width: ${cellWidth}`)
+    console.log(`cell height: ${cellHeight}`)
+
     for (let row = 0; row < rows; row++) {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'board-row';
@@ -29,13 +53,34 @@ function createBoard(rows, cols) {
         for (let col = 0; col < cols; col++) {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'board-cell';
+            cellDiv.style.width = `${cellWidth}px`;
+            cellDiv.style.height = `${cellHeight}px`;
             cellDiv.dataset.column = col;
+            // ... rest of your cell setup ...
             rowDiv.appendChild(cellDiv);
         }
-
         board.appendChild(rowDiv);
     }
 }
+
+
+// function createBoard(rows, cols) {
+//     const board = document.getElementById('gameBoard');
+//     board.innerHTML = '';
+//     for (let row = 0; row < rows; row++) {
+//         const rowDiv = document.createElement('div');
+//         rowDiv.className = 'board-row';
+
+//         for (let col = 0; col < cols; col++) {
+//             const cellDiv = document.createElement('div');
+//             cellDiv.className = 'board-cell';
+//             cellDiv.dataset.column = col;
+//             rowDiv.appendChild(cellDiv);
+//         }
+
+//         board.appendChild(rowDiv);
+//     }
+// }
 
 function initializeBoard(rows=6, cols=7) {
     board = [];
@@ -52,8 +97,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add click event listener to the button
     newGameButton.addEventListener('click', function() {
+        console.log(`board length before resetBoard: ${board.length}`)
         resetBoard(withDelay = false, removeBlocks = true);
+        initializeBoard(rows, columns);
+        // console.log(`board length before createBoard: ${board.length}`)
+        createBoard(rows, columns);
+        console.log(`board length before updateBoardDisplay: ${board.length}`)
         updateBoardDisplay();
+        console.log(`board length AFTER updateBoardDisplay: ${board.length}`)
         // Any additional logic to start a new game can go here
         // For example, clearing any game-over messages, resetting scores, etc.
         if (gameMode == 'computerVsComputer') {
@@ -70,7 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
         gameMode = this.value; // Update the gameMode variable based on the selection
         console.log(`gameMode went from ${previousMode} to ${gameMode}`)
         // Optionally, you can also reset the game state or board here
-        resetBoard(withDelay = false, removeBlocks = true)
+        // const rows = parseInt(document.getElementById('rows').value, 10);
+        // const columns = parseInt(document.getElementById('columns').value, 10);
+        resetBoard(withDelay = false, removeBlocks = true);
+        createBoard(rows, columns);
         if (gameMode === 'computerVsComputer') {
             document.getElementById('delay-option').style.display = 'block';
             currentPlayer = 1; // Start with Player 1
@@ -150,47 +204,11 @@ function makeMove(board, column, player) {
     return false;
 }
 
-// function makeMove(board, column, player) {
-//     // Check if the move is legal
-//     if (!getLegalMoves(board).includes(column)) {
-//         console.log("Illegal move. Column is full.");
-//         return false;
-//     }
-//     // Place the piece in the first empty space in the column
-//     for (let row = 0; row < board.length; row++) {
-//         if (board[row][column] === 0) {
-//             board[row][column] = player;
-//             return true; // Move was successful
-//         }
-//     }
-// }
-
-// console.log("Initial Board:");
-// console.log(board);
-
-// Player 1 makes a move in column 3
-// makeMove(board, 3, 1);
-// console.log("Board after Player 1's move:");
-// console.log(board);
-
-// // Player 2 makes a move in the same column
-// makeMove(board, 3, -1);
-// console.log("Board after Player 2's move:");
-// console.log(board);
-
-// for (i = 0; i < 7; i++) {
-//     makeMove(board, 3, 1)
-//     console.log(`Board after ${i+1}th move `)
-//     console.log(board);
-// }
-
-
-
 function updateBoardDisplay() {
     for (let row = 0; row < board.length; row++) {
         for (let col = 0; col < board[row].length; col++) {
             let cell = document.querySelector(`.board-row:nth-child(${row + 1}) .board-cell:nth-child(${col + 1})`);
-            cell.textContent = ''; // Clear previous content
+            cell.textContent = ''; 
             cell.classList.remove('winning-cell');
             cell.classList.remove('player-1', 'player-2'); // Remove previous classes
             if (board[row][col] === 1) {

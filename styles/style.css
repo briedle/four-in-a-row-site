@@ -32,12 +32,12 @@ html {
 
 .board-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .board-cell {
-    width: 100px;
-    height: 100px; 
+    /* width: 100px;
+    height: 100px;  */
     /* flex: 1 0 14%; 
     height: calc(14vw - 4px); */
     border: 1px solid black;
@@ -49,7 +49,12 @@ html {
   border: 2px solid black; /* Style for highlighting winning cells */
 }
 
+.options-container {
+  margin-bottom: 20px; /* Adjust the margin value to create space */
+}
+
 #gameBoard {
+  margin-top: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
