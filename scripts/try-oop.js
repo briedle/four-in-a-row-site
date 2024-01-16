@@ -1,21 +1,35 @@
 "use strict";
-// These first few lines of code are just stuff so that I can run some my test code in node.
+let board;
+let boardView;
+let game;
 
-// Adding event handlers for updating the size of the board, the new game button, and the player types
-document.getElementById('updateBoard').addEventListener('click', function() {
-    // Note to self here: the '10' here is saying interpret as base-10.  Also,
-    // we are indeed parsing an int -- the value from the page is coming in as a 
-    // string.
+// Get a function that initializes the board, boardView and Game once the 
+// DOMContent has been loaded
+function initializeEverything() {
     const newRows = parseInt(document.getElementById('rows').value, 10);
     const newColumns = parseInt(document.getElementById('columns').value, 10);
-    
-    // Update the rows and columns globally
-    rows = newRows;
-    columns = newColumns;
+    const newPlayer1Type = document.getElementById('player1-type-selector').value;
+    const newPlayer2Type = document.getElementById('player2-type-selector').value;
 
-    initializeBoard(rows, columns);
-    createBoard(rows, columns);
-});
+    if (board) {
+        board = null;
+    }
+    if (boardView) {
+        boardView = null;
+    }
+    if (game) {
+        game = null;
+    }
+    board = new ConnectFourBoard(newRows, newColumns);
+    boardView = new ConnectFourBoardView(board);
+    game = new ConnectFourGame(board, newPlayer1Type, newPlayer2Type);
+}
+
+document.addEventListener('DOMContentLoaded', initializeEverything);
+document.getElementById('updateBoardSize').addEventListener('click', initializeEverything);
+document.getElementById('player1-type-selector').addEventListener('change', initializeEverything);
+document.getElementById('player2-type-selector').addEventListener('change', initializeEverything);
+
 
 class IllegalMoveError extends Error {
     constructor(message) {
@@ -287,6 +301,34 @@ class ConnectFourBoardView {
     }
 }
 
+function addBoardListener(gameBoard, game) {
+    const boundHandleBoardClick = function(event) {
+        handleBoardClick(event, game);
+    };
+    gameBoard.addEventListener('click', boundHandleBoardClick);
+    // Optionally store the bound function on the game object to remove it later
+    game.boundHandleBoardClick = boundHandleBoardClick;
+}
+
+function removeBoardListener(gameBoard, game) {
+    if (gameBoard && game.boundHandleBoardClick) {
+        gameBoard.removeEventListener('click', game.boundHandleBoardClick);
+        game.boundHandleBoardClick = null; // Clean up the reference
+    }
+}
+
+function handleBoardClick(event, game) {
+    if (event.target && event.target.matches('.board-cell')) {
+        // Take away any ability to affect board until after the current move
+        // has been accounted for.
+        var gameBoard = document.getElementById('gameBoard');
+        removeBoardListener(gameBoard, game);
+        const clickedColumn = parseInt(event.target.dataset.column);
+        game.makeMove(clickedColumn);
+        // Immediately remove the event listener to prevent further moves
+    }
+}
+
 class ConnectFourGame {
 
     constructor(board, player1Type, player2Type) {
@@ -295,33 +337,19 @@ class ConnectFourGame {
         this.player2Type = player2Type;
         this.currentPlayer = 1;
         this.currentPlayerType = player1Type;
+        console.log(`current player: ${this.currentPlayer}`)
+        console.log(`current player type: ${this.currentPlayerType}`)
+        // Bind the event handler to this instance
+        this.boundHandleBoardClick = (event) => handleBoardClick(event, this);
+        this.updateListeners();
+    }
 
+    updateListeners() {
+        var gameBoard = document.getElementById('gameBoard');
         if (this.currentPlayerType === 'human') {
-            this.addBoardListener();
+            addBoardListener(gameBoard, this);
         } else {
-            this.removeBoardListener();
-        }
-    }
-
-    addBoardListener() {
-        var gameBoard = document.getElementById('gameBoard');
-        gameBoard.addEventListener('click', this.handleBoardClick);
-    }
-
-    removeBoardListener() {
-        var gameBoard = document.getElementById('gameBoard');
-        gameBoard.removeEventListener('click', this.handleBoardClick);
-    }
-
-    handleBoardClick(event) {
-        if (event.target && event.target.matches('.board-cell')) {
-            // Take away any ability to affect board until after the current move
-            // has been accounted for.
-            this.removeBoardListener();
-            const clickedColumn = parseInt(event.target.dataset.column);
-            this.makeMove(clickedColumn);
-            // Immediately remove the event listener to prevent further moves
-
+            removeBoardListener(gameBoard, this);
         }
     }
 
@@ -333,14 +361,15 @@ class ConnectFourGame {
         // make an illegal move, but I don't think we need to worry about 
         // that right now.
         try {
-            this.updateBoard(column, this.currentPlayer);
+            this.board.updateBoard(column, this.currentPlayer);
         } catch (error) {
             if (
                 error instanceof IllegalMoveError &&
                 this.currentPlayerType === 'human'
             ) {
                 alert('This columns is full!');
-                this.addBoardListener();
+                var gameBoard = document.getElementById('gameBoard');
+                addBoardListener(gameBoard, this);
                 return;
             }
             else if (
@@ -355,21 +384,28 @@ class ConnectFourGame {
             console.log("It's a cat's game!!!");
             alert("It's a cat's game!!!");
         }
+        if (this.board.gameState === 'win') {
+            var gameBoard = document.getElementById('gameBoard');
+            removeBoardListener(gameBoard, this);
+        }
         // Celebrate a human's victory
         if (
             this.board.gameState === 'win' && 
             this.currentPlayerType === 'human'
         ) {
-            WinningCelebration(this.currentPlayer).showWinningModal();
+            new WinningCelebration(this.currentPlayer).showWinningModal();
         }
 
         // Switch players and their types.
-        this.currentPlayer === 1 ? 2 : 1;
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
         if (this.currentPlayer === 1) {
             this.currentPlayerType = this.player1Type;
         } else {
             this.currentPlayerType = this.player2Type;
         }
+        console.log(`current player: ${this.currentPlayer}`)
+        console.log(`current player type: ${this.currentPlayerType}`)
+        this.updateListeners();
     }
 
 
@@ -402,7 +438,7 @@ class WinningCelebration {
         modal.style.display = "block";
     
         // You can add animations or other visual effects here
-        addBalloons(10, 5000);
+        this.addBalloons(10, 5000);
     
         // Close the modal after a delay (e.g., 5 seconds)
         setTimeout(() => {
@@ -414,7 +450,7 @@ class WinningCelebration {
         }, 5000);
     }
 
-    static createBalloon() {
+    createBalloon() {
         const balloon = document.createElement("div");
         balloon.className = "balloon";
         // Create the string element
@@ -427,11 +463,11 @@ class WinningCelebration {
     }
 
     // Function to add balloons to the balloons container
-    static  addBalloons(numBalloons, duration) {
+    addBalloons(numBalloons, duration) {
         const balloonsContainer = document.getElementById("balloons-container");
 
         for (let i = 0; i < numBalloons; i++) {
-            const balloon = createBalloon();
+            const balloon = this.createBalloon();
             balloonsContainer.appendChild(balloon);
 
             // Set a random position for each balloon
@@ -451,19 +487,19 @@ class WinningCelebration {
 
 
 
-let t = new ConnectFourBoard(6, 7);
-let tView = new ConnectFourBoardView(t);
-t.updateBoard(1, 1);
-t.updateBoard(1, 2);
-t.updateBoard(2, 1);
-t.updateBoard(0, 1);
-console.log('Before winning move:');
-console.log(t.gameState);
-console.log(t.winner);
-console.log(t.winningCells);
-t.updateBoard(3, 1);
-console.log('After winnning move:')
-console.log(t.gameState);
-console.log(t.winner);
-console.log(t.winningCells);
-console.log(t.board);
+// let t = new ConnectFourBoard(6, 7);
+// let tView = new ConnectFourBoardView(t);
+// t.updateBoard(1, 1);
+// t.updateBoard(1, 2);
+// t.updateBoard(2, 1);
+// t.updateBoard(0, 1);
+// console.log('Before winning move:');
+// console.log(t.gameState);
+// console.log(t.winner);
+// console.log(t.winningCells);
+// t.updateBoard(3, 1);
+// console.log('After winnning move:')
+// console.log(t.gameState);
+// console.log(t.winner);
+// console.log(t.winningCells);
+// console.log(t.board);
