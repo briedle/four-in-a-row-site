@@ -171,9 +171,10 @@ body {
 
 /* Style for the winning message */
 #winner-message {
-    font-size: 150px;
+    font-size: 20vw;
     color: #3498db; 
     font-weight: bold;
+    text-align: center;
 }
 
 /* Center the modal content */
@@ -187,8 +188,8 @@ body {
 /* Balloon Styles */
 .balloon {
     position: relative;
-    width: 60px;
-    height: 60px;
+    width: 5vw;
+    height: 5vh;
     background-color: #f00; /* Balloon color */
     border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
     position: absolute;
@@ -198,9 +199,10 @@ body {
 .string {
     position: absolute;
     width: 2px;
-    height: 40px; /* Adjust the string length */
+    height: 5vh; /* Adjust the string length */
     background-color: #333; /* String color */
-    bottom: -40px;
+    /* bottom: -40px; */
+    bottom: -5vh;
     left: 50%;
     transform: translateX(-1px); /* Center the string */
 }
