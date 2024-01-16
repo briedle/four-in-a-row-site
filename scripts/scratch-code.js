@@ -1,5 +1,5 @@
+"use strict";
 let board = [];
-MAX_CELL_SIZE = 300;
 let rows = 6; // Default rows
 let columns = 7; // Default columns
 let gameMode = 'humanVsComputer'; // Default game mode
@@ -9,14 +9,13 @@ let currentPlayer = 1; // Start with Player 1
 initializeBoard(rows, columns); // Default rows and columns
 createBoard(rows, columns); // Create the visual board
 
-// document.getElementById('gameBoard').addEventListener('click', function(event) {
-//     if (event.target && event.target.matches('.board-cell')) {
-//         const column = parseInt(event.target.dataset.column);
-//         handlePlayerMove(column);
-//     }
-// });
 
+// Adding event handlers for updating the size of the board, the new game button, and the game mode
+// selector (human vs human, human vs computer, computer vs computer)
 document.getElementById('updateBoard').addEventListener('click', function() {
+    // Note to self here: the '10' here is saying interpret as base-10.  Also,
+    // we are indeed parsing an int -- the value from the page is coming in as a 
+    // string.
     const newRows = parseInt(document.getElementById('rows').value, 10);
     const newColumns = parseInt(document.getElementById('columns').value, 10);
     
@@ -75,17 +74,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function createBoard(rows, cols) {
+// Functions related to creating the board (both the visual board and underlying data structure
+// board), updating the display of the board to match the underlying 'board' data structure
+// and resetting the board.  
+
+/**
+ * Creates the visual board, which is composed of a grid of {rows} rows, which are of class 'board-row'.  Each 'board-row' is then composed of {cols} elements of class 'board-cell'.
+ * 
+ * @param {number} rows - The number of rows in the board
+ * @param {number} cols -- The number of columns in the board
+ * @param {number} max_cell_size -- the maximum size of each cell; cells are squares
+ */
+function createBoard(rows, columns, max_cell_size = 300) {
     const board = document.getElementById('gameBoard');
     board.innerHTML = '';
 
     const cellWidth = Math.min(
-        window.innerWidth / (1.5 * cols),
+        window.innerWidth / (1.5 * columns),
         window.innerHeight / (1.5 * rows),
-         MAX_CELL_SIZE
+         max_cell_size
          );
     const cellHeight = cellWidth;
-    // const cellWidth = Math.min(window.innerWidth / (2 * cols), MAX_CELL_SIZE);
+    // const cellWidth = Math.min(window.innerWidth / (2 * columns), MAX_CELL_SIZE);
     // const cellHeight = Math.min(window.innerHeight / (2 * rows), MAX_CELL_SIZE);
     console.log(`window.innerWidth: ${window.innerWidth}`)
     console.log(`window.innerHeight: ${window.innerHeight}`)
@@ -96,7 +106,7 @@ function createBoard(rows, cols) {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'board-row';
 
-        for (let col = 0; col < cols; col++) {
+        for (let col = 0; col < columns; col++) {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'board-cell';
             cellDiv.style.width = `${cellWidth}px`;
@@ -129,6 +139,8 @@ function updateBoardDisplay() {
             cell.textContent = ''; 
             cell.classList.remove('winning-cell');
             cell.classList.remove('player-1', 'player-2'); // Remove previous classes
+            // Here is where we use the current state of 'board' (which is an array of 
+            // 0's, 1's and 2's and make sure that the visual board aligns with the board matrix)
             if (board[row][col] === 1) {
                 cell.classList.add('player-1');
             } else if (board[row][col] === 2) {
@@ -271,8 +283,6 @@ function handlePlayerMove(column) {
         console.log("Illegal move. Try another column.");
         return;
     }
-
-
     makeMove(board, column, currentPlayer);
     updateBoardDisplay();
 

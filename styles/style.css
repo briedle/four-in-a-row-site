@@ -50,7 +50,21 @@ html {
 }
 
 .options-container {
-  margin-bottom: 20px; /* Adjust the margin value to create space */
+  margin-bottom: 20px; 
+  display: flex;
+  flex-direction: column;
+}
+
+.player-selection, .board-configuration {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px; /* Adds some space between the rows */
+}
+
+.player-selection label, .player-selection select,
+.board-configuration label, .board-configuration input, .board-configuration button {
+    margin-right: 20px; /* Adds some space between elements within a row */
 }
 
 #gameBoard {
