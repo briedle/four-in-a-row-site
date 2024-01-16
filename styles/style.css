@@ -81,12 +81,13 @@ body {
 .options-container {
   margin-bottom: 20px; 
   display: flex;
+  flex-wrap: nowrap;
   flex-direction: column;
 }
 
 .player-selection, .board-configuration {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   margin-bottom: 20px; /* Adds some space between the rows */
 }
