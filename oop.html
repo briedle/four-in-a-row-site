@@ -26,18 +26,18 @@
                 <input type="number" id="columns" name="columns" min="4" max="10" value="7">
                 <button id="updateBoardSize">Update Board Size</button>
             </div>
-
+            <div id="notification" class="notification"></div>
             <!-- First Row for Player Selection -->
             <div class="player-selection">
                 <label for="player1-type-selector">Player 1:</label>
                 <select id="player1-type-selector">
-                    <option value="human">Human</option>
+                    <option value="human" selected>Human</option>
                     <option value="computer">Computer</option>
                 </select>
                 <label for="player2-type-selector">Player 2:</label>
                 <select id="player2-type-selector">
-                    <option value="human" selected>Human</option>
-                    <option value="computer">Computer</option>
+                    <option value="human">Human</option>
+                    <option value="computer" selected>Computer</option>
                 </select>
             </div>
         
