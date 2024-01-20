@@ -124,6 +124,7 @@ class ConnectFourBoard {
         this.gameState = 'undecided';
         this.winner = null;
         this.winningCells = null;
+        this.gameHistory = new GameHistory();
         // Notify the board views about the reset
         this.notifyBoardViews();
     }
@@ -379,10 +380,10 @@ class ConnectFourBoardView {
              this.max_cell_size
         );
         const cellHeight = cellWidth;
-        console.log(`window.innerWidth: ${window.innerWidth}`)
-        console.log(`window.innerHeight: ${window.innerHeight}`)
-        console.log(`cell width: ${cellWidth}`)
-        console.log(`cell height: ${cellHeight}`)
+        // console.log(`window.innerWidth: ${window.innerWidth}`)
+        // console.log(`window.innerHeight: ${window.innerHeight}`)
+        // console.log(`cell width: ${cellWidth}`)
+        // console.log(`cell height: ${cellHeight}`)
     
         for (let row = 0; row < this.board.rows; row++) {
             const rowDiv = document.createElement('div');
@@ -429,34 +430,40 @@ class ConnectFourBoardView {
     }
 }
 
-function addBoardListener(gameBoard, game) {
-    const boundHandleBoardClick = function(event) {
-        handleBoardClick(event, game);
-    };
-    gameBoard.addEventListener('click', boundHandleBoardClick);
-    // Optionally store the bound function on the game object to remove it later
-    game.boundHandleBoardClick = boundHandleBoardClick;
-}
+// function addBoardListener(gameBoard, game) {
+//     const boundHandleBoardClick = function(event) {
+//         console.log('Board click listener triggered');
+//         handleBoardClick(event, game);
+//     };
+//     gameBoard.addEventListener('click', boundHandleBoardClick);
+//     // Optionally store the bound function on the game object to remove it later
+//     game.boundHandleBoardClick = boundHandleBoardClick;
+//     console.log('Board listener added');
+// }
 
-function removeBoardListener(gameBoard, game) {
-    if (gameBoard && game.boundHandleBoardClick) {
-        gameBoard.removeEventListener('click', game.boundHandleBoardClick);
-        game.boundHandleBoardClick = null; // Clean up the reference
-    }
-}
+// function removeBoardListener(gameBoard, game) {
+//     if (gameBoard && game.boundHandleBoardClick) {
+//         gameBoard.removeEventListener('click', game.boundHandleBoardClick);
+//         console.log('Board listener removed');
+//         game.boundHandleBoardClick = null; // Clean up the reference
+//     } else {
+//         console.log('No board listener found to remove');
+//     }
+// }
 
-function handleBoardClick(event, game) {
-    if (event.target && event.target.matches('.board-cell')) {
-        console.log(`click on something`)
-        // Take away any ability to affect board until after the current move
-        // has been accounted for.
-        var gameBoard = document.getElementById('gameBoard');
-        removeBoardListener(gameBoard, game);
-        const clickedColumn = parseInt(event.target.dataset.column);
-        game.play(clickedColumn);
-        // Immediately remove the event listener to prevent further moves
-    }
-}
+// function handleBoardClick(event, game) {
+//     if (event.target && event.target.matches('.board-cell')) {
+//         // console.log(`click on something`)
+//         // Take away any ability to affect board until after the current move
+//         // has been accounted for.
+//         var gameBoard = document.getElementById('gameBoard');
+//         // Immediately remove the event listener to prevent further moves
+//         removeBoardListener(gameBoard, game);
+//         const clickedColumn = parseInt(event.target.dataset.column);
+//         game.play(clickedColumn);
+
+//     }
+// }
 
 class ConnectFourGame {
 
@@ -465,58 +472,67 @@ class ConnectFourGame {
         this.boardView = boardView;
         this.player1Type = player1Type;
         this.player2Type = player2Type;
-        if (this.player1Type === 'computer') {
-            this.computerPlayer1 = new ComputerPlayer(this.board, 1)
-        }
-        if (this.player2Type === 'computer') {
-            this.computerPlayer2 = new ComputerPlayer(this.board, 2)
-        }
+        this.initializeComputerPlayers();
         this.currentPlayer = 1;
-        this.currentPlayerType = player1Type;
-        if (this.currentPlayerType === 'computer') {
-            this.triggerNextMove();
-        }
+        this.currentPlayerType = this.player1Type;
         console.log(`current player: ${this.currentPlayer}`)
         console.log(`current player type: ${this.currentPlayerType}`)
         // Bind the event handler to this instance
-        this.boundHandleBoardClick = (event) => handleBoardClick(event, this);
-        this.boundResetListener = this.resetListener.bind(this);
+        // this.boundHandleBoardClick = (event) => handleBoardClick(event, this);
+        // Define resetListener as an arrow function so that 'this' is automatically 
+        // bound to the ConnectFourGame instance
+        // this.resetListener = () => {
+        //     this.reset(this.player1Type, this.player2Type);
+        //     var gameBoard = document.getElementById('gameBoard');
+        //     gameBoard.removeEventListener('click', this.resetListener);
+        // };
+        // Define the click handler function as an arrow function so that 'this' is
+        // automatically bound to the ConnectFourGame instance, even when
+        // it is called by the event listener.
+        this.handleBoardClick = (event) => {
+            if (event.target && event.target.matches('.board-cell')) {
+                const clickedColumn = parseInt(event.target.dataset.column);
+                this.play(clickedColumn);
+            }
+        };
+        // Create a bound version of reset that is always the same method,
+        // so that we can then use it when we add or remove an event listener
+        // that restarts the game once the game has completed.
+        this.boundReset = this.reset.bind(this);
         this.updateListeners();
+        if (this.currentPlayerType === 'computer') {
+            this.executeComputerMove();
+        }
     }
 
     reset(player1Type, player2Type) {
-        var gameBoard = document.getElementById('gameBoard');
-        removeBoardListener(gameBoard, this);
-        this.player1Type = player1Type;
-        this.player2Type = player2Type;
-        if (this.player1Type === 'computer' && !this.computerPlayer1) {
-            this.computerPlayer1 = new ComputerPlayer(this.board)
+        if (!(player1Type instanceof Event)) {
+            // Note: the logical OR operator returns the first truthy value.
+            this.player1Type = player1Type || this.player1Type;
+            this.player2Type = player2Type || this.player2Type;
         }
-        if (this.player2Type === 'computer' && !this.computerPlayer2) {
-            this.computerPlayer2 = new ComputerPlayer(this.board)
-        }
+        this.initializeComputerPlayers();
+        this.board.reset(); 
+        this.boardView.reset();
         this.currentPlayer = 1;
-        this.currentPlayerType = player1Type;
-        if (this.currentPlayerType === 'computer') {
-            this.triggerNextMove();
-        }
-        console.log(`current player: ${this.currentPlayer}`);
-        console.log(`current player type: ${this.currentPlayerType}`);
-        // Reset the board and boardView
-        if (this.board) {
-            this.board.reset(); // Assumes ConnectFourBoard has a reset method
-        }
-        if (this.boardView) {
-            this.boardView.reset();
-        }
-        // Update listeners - add event listeners back if the current player is human
+        this.currentPlayerType = this.player1Type;
+        // remove the event listener that resets the game upon a click on 
+        // the board after a victory or tie.
+        var gameBoard = document.getElementById('gameBoard');
+        gameBoard.removeEventListener('click', this.boundReset);
         this.updateListeners();
+        console.log(`current player: ${this.currentPlayer}`)
+        console.log(`current player type: ${this.currentPlayerType}`)
+        if (this.currentPlayerType === 'computer') {
+            this.executeComputerMove();
+        }
     }
 
     play(column) {
-        if (this.currentPlayerType === 'computer') {
-            column = this.createComputerMove();
-        }
+        console.log('play called')
+        // if (this.currentPlayerType === 'computer') {
+        //     column = this.executeComputerMove();
+        // }
         try {
             this.registerMove(column);
         } catch (error) {
@@ -529,34 +545,66 @@ class ConnectFourGame {
                 return;
             }
         }
+        console.log(
+            `game history: ${JSON.stringify(this.board.gameHistory.getMoveHistory())}`
+        );
         this.alertWinOrTie();
 
         if (this.board.gameState === 'undecided') {
             this.switchPlayers();
-            this.updateListeners();
-            this.triggerNextMove();
+            // Note that triggerNextMove calls createComputerMove 
+            // (assuming computer's turn), but this call to createComputerMove
+            // is done with a delay, so the logs will say that 
+            // triggerNextMove is finished, and then play is finished
+            // and only after that is createComputerMove called.
+            //  But the order in which these things were registered is 
+            // different than the order in which they actually occur.
+            if (this.currentPlayerType === 'computer') {
+                this.executeComputerMove();
+            }
         } else {
-            // reset the board in the case of a victory or tie
-            this.prepareForReset(this.player1Type, this.player2Type);
+            // Upon clicking the board, reset the board in the case of a 
+            // victory or tie
+            var gameBoard = document.getElementById('gameBoard');
+            gameBoard.addEventListener('click', this.boundReset);
+        }
+        console.log('play finished')
+    }
+
+    switchPlayers() {
+        // Switch players and their types.
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+        this.currentPlayerType = this.currentPlayer === 1 
+            ? this.player1Type 
+            : this.player2Type;
+        this.updateListeners();
+        console.log(`current player: ${this.currentPlayer}`)
+        console.log(`current player type: ${this.currentPlayerType}`)
+    }
+
+    
+    updateListeners() {
+        var gameBoard = document.getElementById('gameBoard');
+        if (this.currentPlayerType === 'human') {
+            // Directly attach the listener
+            gameBoard.addEventListener('click', this.handleBoardClick);
+            console.log('Board listener added');
+        } else {
+            // Directly remove the listener
+            gameBoard.removeEventListener('click', this.handleBoardClick);
+            console.log('Board listener removed');
         }
     }
-
-
-    prepareForReset() {
-        var gameBoard = document.getElementById('gameBoard');
-        gameBoard.addEventListener('click', this.boundResetListener);
-    }
     
-    resetListener() {
-        this.reset(this.player1Type, this.player2Type);
-        // Remove event listeners to prevent multiple resets
-        var gameBoard = document.getElementById('gameBoard');
-        gameBoard.removeEventListener('click', this.boundResetListener);
-    }
+    // resetListener() {
+    //     this.reset(this.player1Type, this.player2Type);
+    //     // Remove event listeners to prevent multiple resets
+    //     var gameBoard = document.getElementById('gameBoard');
+    //     gameBoard.removeEventListener('click', this.boundResetListener);
+    // }
     
-    
-
-    triggerNextMove() {
+    executeComputerMove() {
+        console.log('executeComputerMove called')
         if (this.currentPlayerType === 'computer') {
             // Fetch the delay from the input element
             const requestedDelay = parseInt(document.getElementById('delay-time').value, 10);
@@ -566,33 +614,32 @@ class ConnectFourGame {
             const delay = Math.max(isNaN(requestedDelay) ? defaultDelay : requestedDelay, minimumDelay);
     
             setTimeout(() => {
-                const computerMove = this.createComputerMove();
-                this.play(computerMove);
+                // additional check because the player may have switched
+                // to human.
+                if (this.currentPlayerType === 'computer') { 
+                    const computerMove = this.calculateComputerMove();
+                    this.play(computerMove);
+                }
             }, delay);
         }
         // If it's a human player's turn, the next move will be triggered by a click event
+        console.log('executeComputerMove finished')
     }
 
-    createComputerMove() {
+    calculateComputerMove() {
         // technically when the computer player is making random moves, then we 
         // don't need two computer players ever, but trying to make this extensible for 
         // if and when we can make more intelligent computer players.
-        console.log(`current player: ${this.currentPlayer}`)
+        console.log('calculateComputerMove called')
+        console.log(`ConnectFourGame.createComputerMove current player: ${this.currentPlayer}`)
         if (this.currentPlayer === 1) {
             return this.computerPlayer1.makeComputerMove();
         } else if (this.currentPlayer === 2) {
             return this.computerPlayer2.makeComputerMove();
         }
+        console.log('calculateComputerMove finished')
     }
 
-    updateListeners() {
-        var gameBoard = document.getElementById('gameBoard');
-        if (this.currentPlayerType === 'human') {
-            addBoardListener(gameBoard, this);
-        } else {
-            removeBoardListener(gameBoard, this);
-        }
-    }
 
     registerMove(column) {
         // Try updating the board and if the move is illegal 
@@ -621,13 +668,6 @@ class ConnectFourGame {
     }
 
     alertWinOrTie() {
-        if (this.board.gameState === 'tie') {
-            console.log("It's a cat's game!!!");
-            alert("It's a cat's game!!!");
-        }
-        // Celebrate a human's victory, but don't reset board yet
-        // because we don't want the player switching logic to 
-        // cause issues.
         if (
             this.board.gameState === 'win' && 
             this.currentPlayerType === 'human'
@@ -638,19 +678,23 @@ class ConnectFourGame {
             this.currentPlayerType === 'computer'
         ) {
             showNotification(`Player ${this.currentPlayer} Wins`);
+        } else if (this.board.gameState === 'tie') {
+            console.log("It's a cat's game!!!");
+            alert("It's a cat's game!!!");
         }
+        // Celebrate a human's victory, but don't reset board yet
+        // because we don't want the player switching logic to 
+        // cause issues.
+
     }
 
-    switchPlayers() {
-        // Switch players and their types.
-        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-        if (this.currentPlayer === 1) {
-            this.currentPlayerType = this.player1Type;
-        } else {
-            this.currentPlayerType = this.player2Type;
-        }
-        console.log(`current player: ${this.currentPlayer}`)
-        console.log(`current player type: ${this.currentPlayerType}`)
+    initializeComputerPlayers() {
+        this.computerPlayer1 = (this.player1Type === 'computer') 
+            ? new ComputerPlayer(this.board, 1) 
+            : null;
+        this.computerPlayer2 = (this.player2Type === 'computer') 
+            ? new ComputerPlayer(this.board, 2) 
+            : null;
     }
 }  
 
@@ -662,7 +706,8 @@ class ComputerPlayer {
     }
 
     makeComputerMove() {
-
+        console.log('ComputerPlayer.makeComputerMove called')
+        console.log(`ComputerPlayer.makeComputerMove: ${this.player}`)
         // First, check if the AI has a winning move
         for (let move of this.board.legalMoves) {
             let boardCopy = this.board.clone();
@@ -685,7 +730,7 @@ class ComputerPlayer {
         let bestScore = -Infinity;
         let alpha = -Infinity;
         let beta = Infinity;
-        let depth = 3; // Depth of the minimax algorithm; adjust as needed
+        let depth = 5; // Depth of the minimax algorithm; adjust as needed
     
         for (let move of this.board.legalMoves) {
             let boardCopy = this.board.clone();
@@ -697,10 +742,10 @@ class ComputerPlayer {
                 bestMove = move;
             }
         }  
+        console.log('ComputerPlayer.makeComputerMove finished')
         return bestMove !== null ? bestMove : this.chooseRandomMove();
     }
     
-
     minimax(board, depth, alpha, beta, maximizingPlayer) {
         if (depth === 0 || board.gameState !== 'undecided') {
             return this.evaluateBoard(board);
@@ -880,6 +925,11 @@ class ComputerPlayer {
         let randomIndex = Math.floor(Math.random() * legalMoves.length);
         return legalMoves[randomIndex];
     }
+}
+
+
+function logTurnStart(turnNumber) {
+    console.log('%cStart of Turn ' + turnNumber, 'font-weight: bold; color: red; font-size: 16px;');
 }
 
 
