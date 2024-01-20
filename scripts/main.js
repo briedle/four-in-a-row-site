@@ -253,6 +253,30 @@ class ConnectFourBoard {
         }
         return false
     }
+
+    /**
+     * Creates a new instance of the ConnectFourBoard class with the same state as the current board.
+     * @returns {ConnectFourBoard} A new ConnectFourBoard instance.
+     */
+    clone() {
+        let newBoard = new ConnectFourBoard(this.rows, this.columns);
+        
+        // Explicitly copy the board state
+        newBoard.board = this.board.map(row => [...row]);
+    
+        // Copy all other necessary properties
+        newBoard.gameState = this.gameState;
+        newBoard.legalMoves = [...this.legalMoves];
+        newBoard.mostRecentMove = { ...this.mostRecentMove };
+        newBoard.mostRecentPlayer = this.mostRecentPlayer;
+        newBoard.winner = this.winner;
+        newBoard.winningCells = this.winningCells ? this.winningCells.map(cell => ({ ...cell })) : null;
+        // Do not copy the observers (boardViews)
+        newBoard.boardViews = []; // Initialize with an empty array or appropriate value
+
+        return newBoard;
+    }
+    
 }
 
 
@@ -368,10 +392,10 @@ class ConnectFourGame {
         this.player1Type = player1Type;
         this.player2Type = player2Type;
         if (this.player1Type === 'computer') {
-            this.computerPlayer1 = new ComputerPlayer(this.board)
+            this.computerPlayer1 = new ComputerPlayer(this.board, 1)
         }
         if (this.player2Type === 'computer') {
-            this.computerPlayer2 = new ComputerPlayer(this.board)
+            this.computerPlayer2 = new ComputerPlayer(this.board, 2)
         }
         this.currentPlayer = 1;
         this.currentPlayerType = player1Type;
@@ -479,6 +503,7 @@ class ConnectFourGame {
         // technically when the computer player is making random moves, then we 
         // don't need two computer players ever, but trying to make this extensible for 
         // if and when we can make more intelligent computer players.
+        console.log(`current player: ${this.currentPlayer}`)
         if (this.currentPlayer === 1) {
             return this.computerPlayer1.makeComputerMove();
         } else if (this.currentPlayer === 2) {
@@ -553,22 +578,44 @@ class ConnectFourGame {
         console.log(`current player: ${this.currentPlayer}`)
         console.log(`current player type: ${this.currentPlayerType}`)
     }
-        // Alert when the game is a tie.
+
+
 
 }            
 
-
 class ComputerPlayer {
-
-    constructor(board) {
+    constructor(board, player) {
         this.board = board;
+        this.player = player;
+        
     }
 
     makeComputerMove() {
         let legalMoves = this.board.legalMoves;
+
+        // Check if there's a winning move available
+        for (let move of legalMoves) {
+            // Make a copy of the board
+            let boardCopy = this.board.clone();
+            // Assume the opponent is the other player
+            let opponent = this.player === 1 ? 2 : 1;
+            boardCopy.updateBoard(move, opponent);
+            if (boardCopy.gameState === 'win') {
+                return move; // Block the opponent's winning move
+            }
+
+            // Try the move
+            boardCopy.updateBoard(move, this.player);
+
+            // Check if the move is a winning one
+            if (boardCopy.gameState === 'win') {
+                return move;
+            }
+        }
+
+        // If there's no winning move, make a random move
         let randomIndex = Math.floor(Math.random() * legalMoves.length);
         return legalMoves[randomIndex];
-
     }
 }
 
@@ -609,6 +656,11 @@ class WinningCelebration {
     
             // Remove the winner message element
             modalContent.removeChild(winnerMessage);
+
+             // Remove all balloons
+        //     while (balloonsContainer.firstChild) {
+        //         balloonsContainer.removeChild(balloonsContainer.firstChild);
+        // }
         }, 5000);
     }
 
