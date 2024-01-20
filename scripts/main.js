@@ -47,6 +47,42 @@ class IllegalMoveError extends Error {
     }
 }
 
+
+class GameHistory {
+    constructor() {
+        this.moves = []; // Array to store the history of moves
+    }
+
+    addMove(column, player, row) {
+        // Each move is an object containing the column, player, and row
+        this.moves.push({ column, player, row });
+    }
+
+    getLastMove() {
+        // Retrieve the last move; returns undefined if no moves have been made
+        return this.moves.length > 0 ? this.moves[this.moves.length - 1] : undefined;
+    }
+
+    undoLastMove() {
+        // Remove the last move from the history
+        return this.moves.pop();
+    }
+
+    reset() {
+        // Clear the move history
+        this.moves = [];
+    }
+
+    getMoveHistory() {
+        // Return a copy of the move history
+        return [...this.moves];
+    }
+
+    // Additional methods can be added here for more complex functionalities
+    // like replaying the game from history, analyzing move patterns, etc.
+}
+
+
 class ConnectFourBoard {
 
     constructor(rows, columns) {
@@ -63,6 +99,7 @@ class ConnectFourBoard {
         this.gameState = 'undecided'
         this.winner = null;
         this.winningCells = null;
+        this.gameHistory = new GameHistory();
     }
 
     registerBoardView(boardView) {
@@ -117,6 +154,7 @@ class ConnectFourBoard {
         // by the boardView
         this.mostRecentMove = {row: new_row, column: column};
         this.mostRecentPlayer = player;
+        this.gameHistory.addMove(column, player, new_row);
         // check for a win.  If there is a winner then, then updates gameState, winner and winningCells accordingly.
         this.checkWin(player);
         // update legal moves, and if no legal moves remain, then 
@@ -163,7 +201,43 @@ class ConnectFourBoard {
         }
     }
 
-
+    undoMove() {
+        // Retrieve the last move
+        const lastMove = this.gameHistory.undoLastMove();
+    
+        // Check if there is a move to undo
+        if (lastMove) {
+            // Remove the last piece placed
+            this.board[lastMove.row][lastMove.column] = 0;
+    
+            // Revert the most recent move and player
+            // If there are no more moves, reset these to null
+            if (this.gameHistory.getMoveHistory().length > 0) {
+                const previousMove = this.gameHistory.getLastMove();
+                this.mostRecentMove = { row: previousMove.row, column: previousMove.column };
+                this.mostRecentPlayer = previousMove.player;
+            } else {
+                this.mostRecentMove = { row: null, column: null };
+                this.mostRecentPlayer = null;
+            }
+    
+            // Reset game state
+            // Here you may need to re-check for a winner if you're undoing a winning move
+            // For simplicity, we'll set it to 'undecided', but consider more complex logic
+            this.gameState = 'undecided';
+            this.winner = null;
+            this.winningCells = null;
+    
+            // Update legal moves as the last move's column is now available again
+            if (!this.legalMoves.includes(lastMove.column)) {
+                this.legalMoves.push(lastMove.column);
+            }
+    
+            // If you have an observer pattern in place, notify the observers
+            this.notifyBoardViews();
+        }
+    }
+    
     /**
      * Checks whether `player` won the game.  If so, updates this.gameState to 'win', this.winner = player and updates this.winningCells to be the cells that caused the win.
      * @param {number} player The number of the player (either 1 or 2)
@@ -578,46 +652,272 @@ class ConnectFourGame {
         console.log(`current player: ${this.currentPlayer}`)
         console.log(`current player type: ${this.currentPlayerType}`)
     }
+}  
 
-
-
-}            
 
 class ComputerPlayer {
     constructor(board, player) {
         this.board = board;
         this.player = player;
-        
     }
 
     makeComputerMove() {
-        let legalMoves = this.board.legalMoves;
 
-        // Check if there's a winning move available
-        for (let move of legalMoves) {
-            // Make a copy of the board
+        // First, check if the AI has a winning move
+        for (let move of this.board.legalMoves) {
             let boardCopy = this.board.clone();
-            // Assume the opponent is the other player
-            let opponent = this.player === 1 ? 2 : 1;
-            boardCopy.updateBoard(move, opponent);
-            if (boardCopy.gameState === 'win') {
-                return move; // Block the opponent's winning move
-            }
-
-            // Try the move
             boardCopy.updateBoard(move, this.player);
-
-            // Check if the move is a winning one
             if (boardCopy.gameState === 'win') {
-                return move;
+                return move; // AI wins with this move, so take it
             }
         }
 
-        // If there's no winning move, make a random move
+        // Next, check if the opponent has a winning move and block it
+        let opponent = this.player === 1 ? 2 : 1;
+        for (let move of this.board.legalMoves) {
+            let boardCopy = this.board.clone();
+            boardCopy.updateBoard(move, opponent);
+            if (boardCopy.gameState === 'win') {
+                return move; // Block opponent's winning move
+            }
+        }
+        let bestMove = null;
+        let bestScore = -Infinity;
+        let alpha = -Infinity;
+        let beta = Infinity;
+        let depth = 3; // Depth of the minimax algorithm; adjust as needed
+    
+        for (let move of this.board.legalMoves) {
+            let boardCopy = this.board.clone();
+            boardCopy.updateBoard(move, this.player);
+            let score = this.minimax(boardCopy, depth, alpha, beta, false);
+    
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }  
+        return bestMove !== null ? bestMove : this.chooseRandomMove();
+    }
+    
+
+    minimax(board, depth, alpha, beta, maximizingPlayer) {
+        if (depth === 0 || board.gameState !== 'undecided') {
+            return this.evaluateBoard(board);
+        }
+    
+        if (maximizingPlayer) {
+            let maxEval = -Infinity;
+            for (let move of board.legalMoves) {
+                let boardCopy = board.clone();
+                boardCopy.updateBoard(move, this.player);
+                let evaluation = this.minimax(boardCopy, depth - 1, alpha, beta, false);
+                maxEval = Math.max(maxEval, evaluation);
+                alpha = Math.max(alpha, evaluation);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            let opponent = this.player === 1 ? 2 : 1;
+            for (let move of board.legalMoves) {
+                let boardCopy = board.clone();
+                boardCopy.updateBoard(move, opponent);
+                let evaluation = this.minimax(boardCopy, depth - 1, alpha, beta, true);
+                minEval = Math.min(minEval, evaluation);
+                beta = Math.min(beta, evaluation);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+            return minEval;
+        }
+    }
+    
+
+    evaluateBoard(board) {
+        let score = 0;
+    
+        // Heuristic 1: Center Column Control
+        for (let row = 0; row < board.rows; row++) {
+            if (board.board[row][Math.floor(board.columns / 2)] === this.player) {
+                score += 3; // Higher score for center pieces
+            }
+        }
+    
+        // Heuristic 2: Horizontal Alignment
+        for (let row = 0; row < board.rows; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                score += this.evaluatePosition(board, row, col, 0, 1);
+            }
+        }
+    
+        // Heuristic 3: Vertical Alignment
+        for (let col = 0; col < board.columns; col++) {
+            for (let row = 0; row < board.rows - 3; row++) {
+                score += this.evaluatePosition(board, row, col, 1, 0);
+            }
+        }
+    
+        // Heuristic 4: Diagonal Alignment (Positive Slope)
+        for (let row = 0; row < board.rows - 3; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                score += this.evaluatePosition(board, row, col, 1, 1);
+            }
+        }
+    
+        // Heuristic 5: Diagonal Alignment (Negative Slope)
+        for (let row = 3; row < board.rows; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                score += this.evaluatePosition(board, row, col, -1, 1);
+            }
+        } 
+
+        score += this.evaluateThreats(board);
+        
+        return score;
+    }
+
+
+    evaluateThreats(board) {
+        let threatScore = 0;
+        let opponent = this.player === 1 ? 2 : 1;
+    
+        // Check horizontal threats
+        for (let row = 0; row < board.rows; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                if (this.checkThreat(board, row, col, 0, 1, opponent)) {
+                    threatScore -= 50;
+                }
+            }
+        }
+    
+        // Check vertical threats
+        for (let col = 0; col < board.columns; col++) {
+            for (let row = 0; row < board.rows - 3; row++) {
+                if (this.checkThreat(board, row, col, 1, 0, opponent)) {
+                    threatScore -= 50;
+                }
+            }
+        }
+    
+        // Check diagonal threats (positive slope)
+        for (let row = 0; row < board.rows - 3; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                if (this.checkThreat(board, row, col, 1, 1, opponent)) {
+                    threatScore -= 50;
+                }
+            }
+        }
+    
+        // Check diagonal threats (negative slope)
+        for (let row = 3; row < board.rows; row++) {
+            for (let col = 0; col < board.columns - 3; col++) {
+                if (this.checkThreat(board, row, col, -1, 1, opponent)) {
+                    threatScore -= 50;
+                }
+            }
+        }
+    
+        return threatScore;
+    }
+    
+    checkThreat(board, row, col, rowIncrement, colIncrement, opponent) {
+        let opponentCount = 0;
+        let emptyCount = 0;
+    
+        for (let i = 0; i < 4; i++) {
+            let currentRow = row + i * rowIncrement;
+            let currentCol = col + i * colIncrement;
+    
+            if (currentRow < 0 || currentRow >= board.rows || currentCol < 0 || currentCol >= board.columns) {
+                continue; // Skip out-of-bound positions
+            }
+    
+            if (board.board[currentRow][currentCol] === opponent) {
+                opponentCount++;
+            } else if (board.board[currentRow][currentCol] === 0) {
+                emptyCount++;
+            }
+        }
+    
+        // Detect a threat (three in a row with an opening)
+        return opponentCount === 3 && emptyCount === 1;
+    }
+    
+
+
+    evaluatePosition(board, row, col, rowIncrement, colIncrement) {
+        let playerCount = 0;
+        let emptyCount = 0;
+    
+        for (let i = 0; i < 4; i++) {
+            if (board.board[row + i * rowIncrement][col + i * colIncrement] === this.player) {
+                playerCount++;
+            } else if (board.board[row + i * rowIncrement][col + i * colIncrement] === 0) {
+                emptyCount++;
+            }
+        }
+    
+        // Assign scores based on the number of player pieces and empty spaces in the sequence
+        if (playerCount === 4) {
+            return 100; // Highest score for 4 in a row
+        } else if (playerCount === 3 && emptyCount === 1) {
+            return 10; // High score for 3 in a row with an empty space for the 4th
+        } else if (playerCount === 2 && emptyCount === 2) {
+            return 5; // Moderate score for 2 in a row with spaces for the others
+        }
+    
+        return 0;
+    }
+    
+    
+
+    chooseRandomMove() {
+        let legalMoves = this.board.legalMoves;
         let randomIndex = Math.floor(Math.random() * legalMoves.length);
         return legalMoves[randomIndex];
     }
 }
+
+
+// class ComputerPlayer {
+//     constructor(board, player) {
+//         this.board = board;
+//         this.player = player;
+        
+//     }
+
+//     makeComputerMove() {
+//         let legalMoves = this.board.legalMoves;
+
+//         // Check if there's a winning move available
+//         for (let move of legalMoves) {
+//             // Make a copy of the board
+//             let boardCopy = this.board.clone();
+//             // Assume the opponent is the other player
+//             let opponent = this.player === 1 ? 2 : 1;
+//             boardCopy.updateBoard(move, opponent);
+//             if (boardCopy.gameState === 'win') {
+//                 return move; // Block the opponent's winning move
+//             }
+
+//             // Try the move
+//             boardCopy.updateBoard(move, this.player);
+
+//             // Check if the move is a winning one
+//             if (boardCopy.gameState === 'win') {
+//                 return move;
+//             }
+//         }
+
+//         // If there's no winning move, make a random move
+//         let randomIndex = Math.floor(Math.random() * legalMoves.length);
+//         return legalMoves[randomIndex];
+//     }
+// }
 
 
 class WinningCelebration {
