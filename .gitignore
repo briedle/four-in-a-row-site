@@ -1,1 +1,3 @@
 node_modules/
+scripts/jupyter_play.ipynb
+scripts/__pycache__/
